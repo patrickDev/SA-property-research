@@ -1,0 +1,80 @@
+{
+  "name": "bexar-property-research",
+  "main": "src/worker.ts",
+  "compatibility_date": "2024-12-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Treat .html files as importable text modules
+  "rules": [
+    { "type": "Text", "globs": ["**/*.html"], "fallthrough": false }
+  ],
+
+  // D1 SQLite database
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bexar-property-research",
+      // Run: wrangler d1 create bexar-property-research
+      // Then paste the database_id here
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "migrations_dir": "src/db/migrations"
+    }
+  ],
+
+  // R2 object storage for source files and generated CSVs
+  "r2_buckets": [
+    {
+      "binding": "FILES_BUCKET",
+      "bucket_name": "bexar-property-research-files"
+      // Run: wrangler r2 bucket create bexar-property-research-files
+    }
+  ],
+
+  // Cloudflare Queues for async processing
+  "queues": {
+    "producers": [
+      {
+        "binding": "IMPORT_QUEUE",
+        "queue": "bexar-import-jobs"
+      },
+      {
+        "binding": "EXPORT_QUEUE",
+        "queue": "bexar-export-jobs"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "bexar-import-jobs",
+        "max_batch_size": 5,
+        "max_batch_timeout": 30,
+        "max_retries": 3,
+        "dead_letter_queue": "bexar-import-dlq"
+      },
+      {
+        "queue": "bexar-export-jobs",
+        "max_batch_size": 1,
+        "max_batch_timeout": 60,
+        "max_retries": 2
+      }
+    ]
+  },
+
+  // Cron trigger for daily retention cleanup (2:00 AM UTC)
+  "triggers": {
+    "crons": ["0 2 * * *"]
+  },
+
+  // Default environment variables (override with wrangler secret or .dev.vars)
+  "vars": {
+    // "research_only" or "outreach" — controls whether do_not_contact fields
+    // and the "Contacted" status block are enforced (see README)
+    "APP_USAGE_MODE": "research_only",
+    // Days before uploaded source files in R2 are deleted
+    "RETENTION_DAYS_SOURCE_FILES": "30",
+    // Days before generated export CSVs in R2 are deleted (shorter because they contain PII)
+    "RETENTION_DAYS_GENERATED_CSV": "7"
+    // Cloudflare Access configuration — set these as wrangler secrets:
+    //   wrangler secret put CF_ACCESS_AUDIENCE
+    //   wrangler secret put CF_ACCESS_TEAM_DOMAIN
+  }
+}

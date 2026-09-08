@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bexar County Commercial Property Research</title>
+  <style>
+    :root {
+      --blue: #1a56db;
+      --blue-dark: #1e429f;
+      --blue-light: #e8f0fe;
+      --green: #057a55;
+      --green-light: #def7ec;
+      --yellow: #9f580a;
+      --yellow-light: #fdf6b2;
+      --red: #c81e1e;
+      --red-light: #fde8e8;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 6px;
+      --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; color: var(--gray-800); background: var(--gray-50); min-height: 100vh; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Layout */
+    header { background: var(--blue-dark); color: #fff; padding: 0 24px; display: flex; align-items: center; height: 56px; gap: 16px; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
+    header h1 { font-size: 16px; font-weight: 600; flex: 1; }
+    #user-badge { font-size: 12px; background: rgba(255,255,255,.15); padding: 4px 10px; border-radius: 20px; }
+    nav { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 24px; display: flex; gap: 0; }
+    nav button { background: none; border: none; padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--gray-600); cursor: pointer; border-bottom: 2px solid transparent; transition: .15s; }
+    nav button.active, nav button:hover { color: var(--blue); border-bottom-color: var(--blue); }
+    main { padding: 24px; max-width: 1280px; margin: 0 auto; }
+
+    /* Cards */
+    .card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--gray-800); }
+
+    /* Grid */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .grid-4 { grid-template-columns: 1fr 1fr; } .grid-3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+
+    /* Forms */
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--gray-700); margin-bottom: 4px; }
+    input, select, textarea {
+      width: 100%; padding: 7px 10px; border: 1px solid var(--gray-300);
+      border-radius: var(--radius); font-size: 13px; color: var(--gray-800);
+      background: #fff; transition: border-color .15s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,86,219,.15); }
+    textarea { min-height: 80px; resize: vertical; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; transition: .15s; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+    .btn-secondary:hover { background: var(--gray-200); }
+    .btn-danger { background: var(--red-light); color: var(--red); border: 1px solid #fca5a5; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .badge-new { background: var(--blue-light); color: var(--blue-dark); }
+    .badge-contacted { background: var(--green-light); color: var(--green); }
+    .badge-follow { background: var(--yellow-light); color: var(--yellow); }
+    .badge-interested { background: #d1fae5; color: #065f46; }
+    .badge-not-interested { background: var(--red-light); color: var(--red); }
+    .badge-dnc { background: #1f2937; color: #f9fafb; }
+    .badge-exact { background: var(--green-light); color: var(--green); }
+    .badge-fuzzy { background: var(--yellow-light); color: var(--yellow); }
+    .badge-review { background: var(--red-light); color: var(--red); }
+    .badge-unmatched { background: var(--gray-100); color: var(--gray-600); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+    tbody td { padding: 9px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+    tbody tr:hover { background: var(--blue-light); }
+    tbody tr:hover td { cursor: pointer; }
+
+    /* Alerts */
+    .alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
+    .alert-error { background: var(--red-light); color: var(--red); border: 1px solid #fca5a5; }
+    .alert-success { background: var(--green-light); color: var(--green); border: 1px solid #6ee7b7; }
+    .alert-info { background: var(--blue-light); color: var(--blue-dark); border: 1px solid #93c5fd; }
+    .alert-warn { background: var(--yellow-light); color: var(--yellow); border: 1px solid #fcd34d; }
+
+    /* Progress */
+    .progress-bar { height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--blue); transition: width .3s; }
+
+    /* Sections */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* Upload zone */
+    .upload-zone { border: 2px dashed var(--gray-300); border-radius: var(--radius); padding: 32px; text-align: center; transition: .15s; }
+    .upload-zone:hover, .upload-zone.dragover { border-color: var(--blue); background: var(--blue-light); }
+    .upload-zone input { display: none; }
+    .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
+    .upload-zone .hint { color: var(--gray-600); font-size: 12px; margin-top: 4px; }
+
+    /* Detail panel */
+    .detail-field { margin-bottom: 12px; }
+    .detail-label { font-size: 11px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: .05em; }
+    .detail-value { margin-top: 2px; font-size: 13px; }
+    .detail-section-title { font-size: 13px; font-weight: 600; color: var(--gray-700); padding: 10px 0 6px; border-top: 1px solid var(--gray-200); margin-top: 10px; }
+
+    /* Tag */
+    .tag { display: inline-block; font-size: 11px; padding: 1px 6px; background: var(--gray-100); border-radius: 3px; color: var(--gray-600); }
+
+    /* Pagination */
+    .pagination { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 16px; font-size: 13px; color: var(--gray-600); }
+
+    /* DNC banner */
+    .dnc-banner { background: #1f2937; color: #f9fafb; padding: 10px 16px; border-radius: var(--radius); margin-bottom: 12px; font-size: 13px; font-weight: 600; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--gray-200); border-top-color: var(--blue); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; }
+
+    /* Modal */
+    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: #fff; border-radius: 8px; padding: 24px; min-width: 420px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🏢 Bexar County Commercial Property Research</h1>
+  <span id="user-badge">Loading…</span>
+</header>
+
+<nav>
+  <button class="active" onclick="showSection('upload')">Upload</button>
+  <button onclick="showSection('jobs')">Jobs</button>
+  <button onclick="showSection('properties')">Properties</button>
+  <button onclick="showSection('export')">Export</button>
+</nav>
+
+<main>
+  <!-- ── Upload ────────────────────────────────────────────────────── -->
+  <section id="upload" class="section active">
+    <div class="grid-2" style="gap:20px">
+      <!-- BCAD -->
+      <div class="card">
+        <div class="card-title">📂 Upload BCAD Data</div>
+        <p style="color:var(--gray-600);font-size:12px;margin-bottom:16px">
+          Upload a CSV exported from the Bexar County Appraisal District.
+          Excel files must be saved as CSV before uploading.
+        </p>
+        <div class="upload-zone" id="bcad-zone">
+          <div class="icon">📄</div>
+          <div>Drag & drop CSV file here, or <label for="bcad-file" style="color:var(--blue);cursor:pointer;display:inline">browse</label></div>
+          <input type="file" id="bcad-file" accept=".csv,text/csv" />
+          <div class="hint">Accepted: .csv · Max 50 MB</div>
+        </div>
+        <div id="bcad-file-name" style="margin:8px 0;font-size:12px;color:var(--gray-600)"></div>
+        <button class="btn btn-primary" id="bcad-upload-btn" onclick="uploadFile('bcad')" disabled>Upload BCAD File</button>
+        <div id="bcad-status" style="margin-top:10px"></div>
+      </div>
+
+      <!-- OPR -->
+      <div class="card">
+        <div class="card-title">📜 Upload OPR Data</div>
+        <p style="color:var(--gray-600);font-size:12px;margin-bottom:16px">
+          Upload Official Public Records data received via a public-records request
+          from Bexar County. Only documented, permitted bulk-export data.
+        </p>
+        <div class="upload-zone" id="opr-zone">
+          <div class="icon">📄</div>
+          <div>Drag & drop CSV file here, or <label for="opr-file" style="color:var(--blue);cursor:pointer;display:inline">browse</label></div>
+          <input type="file" id="opr-file" accept=".csv,text/csv" />
+          <div class="hint">Accepted: .csv · Max 50 MB</div>
+        </div>
+        <div id="opr-file-name" style="margin:8px 0;font-size:12px;color:var(--gray-600)"></div>
+        <button class="btn btn-primary" id="opr-upload-btn" onclick="uploadFile('opr')" disabled>Upload OPR File</button>
+        <div id="opr-status" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-title">📋 Expected CSV Columns</div>
+      <div class="grid-2">
+        <div>
+          <strong style="font-size:12px">BCAD CSV columns (flexible aliases accepted):</strong>
+          <div class="tag" style="margin:8px 0">Property ID</div>
+          <div class="tag">Geographic ID</div>
+          <div class="tag">Owner Name</div>
+          <div class="tag">Mailing Address</div>
+          <div class="tag">Property Address</div>
+          <div class="tag">Legal Description</div>
+          <div class="tag">Property Use Code</div>
+          <div class="tag">Building Type</div>
+          <div class="tag">Building Area (Sq Ft)</div>
+          <div class="tag">Land Area (Acres)</div>
+          <div class="tag">Total Appraised Value</div>
+          <div style="margin-top:8px"><a href="/samples/bcad-sample.csv" download>⬇ Download sample BCAD CSV</a></div>
+        </div>
+        <div>
+          <strong style="font-size:12px">OPR CSV columns (flexible aliases accepted):</strong>
+          <div class="tag" style="margin:8px 0">Document Number</div>
+          <div class="tag">Recording Date</div>
+          <div class="tag">Document Type</div>
+          <div class="tag">Grantor</div>
+          <div class="tag">Grantee</div>
+          <div class="tag">Legal Description</div>
+          <div class="tag">Property Address</div>
+          <div style="margin-top:8px"><a href="/samples/opr-sample.csv" download>⬇ Download sample OPR CSV</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Jobs ─────────────────────────────────────────────────────── -->
+  <section id="jobs" class="section">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div class="card-title" style="margin:0">Recent Jobs</div>
+        <button class="btn btn-secondary btn-sm" onclick="loadJobs()">↻ Refresh</button>
+      </div>
+      <div id="jobs-list"><div class="alert alert-info">Loading jobs…</div></div>
+    </div>
+  </section>
+
+  <!-- ── Properties ────────────────────────────────────────────────── -->
+  <section id="properties" class="section">
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">🔍 Search Filters</div>
+      <div class="grid-4" style="gap:12px">
+        <div><label>City</label><input id="f-city" placeholder="San Antonio" /></div>
+        <div><label>Commercial Only</label><select id="f-commercial"><option value="">All</option><option value="true">Yes</option><option value="false">No</option></select></div>
+        <div><label>Property Use</label><input id="f-use" placeholder="Use code or description" /></div>
+        <div><label>Owner Name</label><input id="f-owner" placeholder="(admin only)" /></div>
+        <div><label>Min Sq Ft</label><input id="f-min-sqft" type="number" placeholder="e.g. 5000" /></div>
+        <div><label>Max Sq Ft</label><input id="f-max-sqft" type="number" placeholder="e.g. 50000" /></div>
+        <div><label>Min Sq M</label><input id="f-min-sqm" type="number" placeholder="e.g. 464" /></div>
+        <div><label>Max Sq M</label><input id="f-max-sqm" type="number" placeholder="e.g. 4645" /></div>
+        <div><label>Min Land Acres</label><input id="f-min-acres" type="number" placeholder="e.g. 0.5" /></div>
+        <div><label>Max Land Acres</label><input id="f-max-acres" type="number" /></div>
+        <div><label>Min Market Value ($)</label><input id="f-min-val" type="number" /></div>
+        <div><label>Max Market Value ($)</label><input id="f-max-val" type="number" /></div>
+        <div><label>Document Type</label><input id="f-doctype" placeholder="Deed, Lien, etc." /></div>
+        <div><label>Recorded After</label><input id="f-after" type="date" /></div>
+        <div><label>Recorded Before</label><input id="f-before" type="date" /></div>
+        <div><label>Match Confidence</label>
+          <select id="f-confidence">
+            <option value="">Any</option>
+            <option value="exact_id">Exact ID</option>
+            <option value="exact_geographic">Exact Geo ID</option>
+            <option value="exact_legal">Exact Legal</option>
+            <option value="fuzzy_address">Fuzzy Address</option>
+            <option value="needs_review">Needs Review ⚠</option>
+            <option value="unmatched">Unmatched</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="searchProperties()">Search</button>
+        <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+      </div>
+    </div>
+
+    <div id="props-alert"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div id="props-count" style="font-size:13px;color:var(--gray-600)">—</div>
+      </div>
+      <div class="table-wrap">
+        <table id="props-table">
+          <thead>
+            <tr>
+              <th>Property ID</th>
+              <th>Address</th>
+              <th>City</th>
+              <th>Use</th>
+              <th>Bldg Sq Ft</th>
+              <th>Bldg Sq M</th>
+              <th>Market Value</th>
+              <th>Call Status</th>
+              <th>OPR Match</th>
+            </tr>
+          </thead>
+          <tbody id="props-body">
+            <tr><td colspan="9" style="text-align:center;color:var(--gray-600);padding:24px">Run a search to see results.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="props-pagination"></div>
+    </div>
+  </section>
+
+  <!-- ── Export ─────────────────────────────────────────────────────── -->
+  <section id="export" class="section">
+    <div class="card" style="max-width:600px">
+      <div class="card-title">📥 Export Commercial Properties</div>
+      <p style="color:var(--gray-600);font-size:12px;margin-bottom:20px">
+        Exports apply the same filters as the Properties search. Leave blank to export all commercial properties.
+        The export runs asynchronously; you will receive a download link when it is ready.
+      </p>
+      <div class="grid-2" style="gap:12px;margin-bottom:16px">
+        <div><label>City</label><input id="e-city" placeholder="San Antonio" /></div>
+        <div><label>Commercial Only</label><select id="e-commercial"><option value="true">Yes</option><option value="">All</option></select></div>
+        <div><label>Min Sq Ft</label><input id="e-min-sqft" type="number" /></div>
+        <div><label>Max Sq Ft</label><input id="e-max-sqft" type="number" /></div>
+        <div><label>Min Sq M</label><input id="e-min-sqm" type="number" /></div>
+        <div><label>Max Sq M</label><input id="e-max-sqm" type="number" /></div>
+        <div><label>Property Use</label><input id="e-use" /></div>
+        <div><label>Match Confidence</label>
+          <select id="e-confidence">
+            <option value="">Any</option>
+            <option value="needs_review">Needs Review ⚠</option>
+            <option value="exact_legal">Exact Legal</option>
+            <option value="fuzzy_address">Fuzzy Address</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="startExport()">Start Export</button>
+      <div id="export-status" style="margin-top:16px"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ── Property detail modal ──────────────────────────────────────── -->
+<div class="modal-backdrop" id="detail-modal">
+  <div class="modal" style="min-width:600px;max-width:900px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="modal-title" id="detail-title">Property Detail</div>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">✕ Close</button>
+    </div>
+    <div id="detail-body">Loading…</div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentUser = null;
+let propsOffset = 0;
+const propsLimit = 25;
+let propsTotal = 0;
+let lastFilters = {};
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
+  try {
+    // Dev-mode: use X-User-Email header if available; in production CF Access handles auth.
+    const resp = await apiFetch('/api/health');
+    document.getElementById('user-badge').textContent = 'Connected';
+    setupUploadZones();
+    loadJobs();
+  } catch (e) {
+    document.getElementById('user-badge').textContent = 'Offline';
+    showAlert('Could not reach API. Check that the worker is running.', 'error', 'user-badge');
+  }
+})();
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'jobs') loadJobs();
+}
+
+// ── API helper ────────────────────────────────────────────────────────────────
+async function apiFetch(path, options = {}) {
+  const resp = await fetch(path, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      // Dev-mode: set your email here for local testing
+      // Remove this in production (Cloudflare Access provides auth)
+      // 'X-User-Email': 'your@email.com',
+    }
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: resp.statusText }));
+    throw new Error(err.error || `HTTP ${resp.status}`);
+  }
+  return resp;
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+function setupUploadZones() {
+  ['bcad', 'opr'].forEach(type => {
+    const zone = document.getElementById(`${type}-zone`);
+    const input = document.getElementById(`${type}-file`);
+    const btn = document.getElementById(`${type}-upload-btn`);
+    const nameEl = document.getElementById(`${type}-file-name`);
+
+    input.addEventListener('change', () => {
+      if (input.files[0]) {
+        nameEl.textContent = `Selected: ${input.files[0].name} (${(input.files[0].size / 1024).toFixed(1)} KB)`;
+        btn.disabled = false;
+      }
+    });
+
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer.files[0]) {
+        const dt = new DataTransfer();
+        dt.items.add(e.dataTransfer.files[0]);
+        input.files = dt.files;
+        input.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+}
+
+async function uploadFile(type) {
+  const input = document.getElementById(`${type}-file`);
+  const statusEl = document.getElementById(`${type}-status`);
+  const btn = document.getElementById(`${type}-upload-btn`);
+  if (!input.files[0]) return;
+
+  btn.disabled = true;
+  statusEl.innerHTML = `<div class="alert alert-info"><span class="spinner"></span> Uploading…</div>`;
+
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+
+  try {
+    const resp = await apiFetch(`/api/imports/${type}`, { method: 'POST', body: formData });
+    const data = await resp.json();
+    statusEl.innerHTML = `<div class="alert alert-success">✓ Upload queued — Job ID: <strong>${data.jobId}</strong>. <a href="#" onclick="showSection('jobs');return false">View Jobs →</a></div>`;
+    pollJob(data.jobId, statusEl);
+  } catch (e) {
+    statusEl.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+    btn.disabled = false;
+  }
+}
+
+function pollJob(jobId, statusEl) {
+  const interval = setInterval(async () => {
+    try {
+      const resp = await apiFetch(`/api/jobs/${jobId}`);
+      const job = await resp.json();
+      const pct = job.totalRecords > 0 ? Math.round(job.processedRecords / job.totalRecords * 100) : 0;
+
+      if (job.status === 'completed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="alert alert-success">✓ Import complete — ${job.processedRecords} records imported.</div>`;
+      } else if (job.status === 'failed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="alert alert-error">✗ Import failed: ${(job.errors[0] || 'Unknown error')}</div>`;
+      } else {
+        statusEl.innerHTML = `<div class="alert alert-info">
+          <span class="spinner"></span> Processing… ${job.processedRecords}/${job.totalRecords} (${pct}%)
+          <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>`;
+      }
+    } catch { clearInterval(interval); }
+  }, 2000);
+}
+
+// ── Jobs ──────────────────────────────────────────────────────────────────────
+async function loadJobs() {
+  const el = document.getElementById('jobs-list');
+  el.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Loading…</div>';
+  try {
+    const resp = await apiFetch('/api/jobs');
+    const data = await resp.json();
+    if (!data.jobs.length) {
+      el.innerHTML = '<div class="alert alert-info">No jobs yet. Upload a file to get started.</div>';
+      return;
+    }
+    el.innerHTML = `<div class="table-wrap"><table>
+      <thead><tr><th>Job ID</th><th>Type</th><th>Status</th><th>Progress</th><th>Created</th><th>Action</th></tr></thead>
+      <tbody>${data.jobs.map(j => `
+        <tr>
+          <td><span style="font-family:monospace;font-size:11px">${j.jobId.slice(0,8)}…</span></td>
+          <td><span class="tag">${j.jobType.replace('_',' ')}</span></td>
+          <td>${statusBadge(j.status)}</td>
+          <td>${j.totalRecords > 0 ? `${j.processedRecords}/${j.totalRecords}` : '—'}</td>
+          <td>${new Date(j.createdAt).toLocaleString()}</td>
+          <td>${j.downloadUrl ? `<a href="${j.downloadUrl}" class="btn btn-secondary btn-sm">⬇ Download</a>` : ''}</td>
+        </tr>
+      `).join('')}</tbody>
+    </table></div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+  }
+}
+
+function statusBadge(status) {
+  const colors = { pending: 'badge-new', processing: 'badge-follow', completed: 'badge-contacted', failed: 'badge-not-interested' };
+  return `<span class="badge ${colors[status] || ''}">${status}</span>`;
+}
+
+// ── Properties ────────────────────────────────────────────────────────────────
+async function searchProperties(offset = 0) {
+  propsOffset = offset;
+  const alert = document.getElementById('props-alert');
+  const body = document.getElementById('props-body');
+  const count = document.getElementById('props-count');
+  alert.innerHTML = '';
+  body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px"><span class="spinner"></span> Searching…</td></tr>';
+
+  const params = new URLSearchParams();
+  const val = id => document.getElementById(id).value;
+  if (val('f-city')) params.set('city', val('f-city'));
+  if (val('f-commercial')) params.set('commercial', val('f-commercial'));
+  if (val('f-use')) params.set('propertyUse', val('f-use'));
+  if (val('f-owner')) params.set('ownerName', val('f-owner'));
+  if (val('f-min-sqft')) params.set('minBuildingSqFt', val('f-min-sqft'));
+  if (val('f-max-sqft')) params.set('maxBuildingSqFt', val('f-max-sqft'));
+  if (val('f-min-sqm')) params.set('minBuildingSqM', val('f-min-sqm'));
+  if (val('f-max-sqm')) params.set('maxBuildingSqM', val('f-max-sqm'));
+  if (val('f-min-acres')) params.set('minLandAcres', val('f-min-acres'));
+  if (val('f-max-acres')) params.set('maxLandAcres', val('f-max-acres'));
+  if (val('f-min-val')) params.set('minMarketValue', val('f-min-val'));
+  if (val('f-max-val')) params.set('maxMarketValue', val('f-max-val'));
+  if (val('f-doctype')) params.set('documentType', val('f-doctype'));
+  if (val('f-after')) params.set('recordedAfter', val('f-after'));
+  if (val('f-before')) params.set('recordedBefore', val('f-before'));
+  if (val('f-confidence')) params.set('matchConfidence', val('f-confidence'));
+  params.set('limit', propsLimit);
+  params.set('offset', offset);
+  lastFilters = Object.fromEntries(params);
+
+  try {
+    const resp = await apiFetch(`/api/properties?${params}`);
+    const data = await resp.json();
+    propsTotal = data.total;
+    count.textContent = `${data.total} propert${data.total !== 1 ? 'ies' : 'y'} found`;
+
+    if (!data.properties.length) {
+      body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-600)">No results matching your filters.</td></tr>';
+      renderPagination();
+      return;
+    }
+
+    body.innerHTML = data.properties.map(p => `
+      <tr onclick="loadDetail('${p.id}')">
+        <td><span style="font-family:monospace">${p.id}</span></td>
+        <td>${p.property_address || '—'}</td>
+        <td>${p.city || '—'}</td>
+        <td><span class="tag">${p.property_use_code || '—'}</span></td>
+        <td>${p.building_area_sq_ft ? p.building_area_sq_ft.toLocaleString() : '—'}</td>
+        <td>${p.building_area_sq_m ? p.building_area_sq_m.toLocaleString() : '—'}</td>
+        <td>${p.total_appraised_value ? '$' + p.total_appraised_value.toLocaleString() : '—'}</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+    `).join('');
+    renderPagination();
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="9"></td></tr>';
+    alert.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+  }
+}
+
+function clearFilters() {
+  ['f-city','f-commercial','f-use','f-owner','f-min-sqft','f-max-sqft',
+   'f-min-sqm','f-max-sqm','f-min-acres','f-max-acres','f-min-val','f-max-val',
+   'f-doctype','f-after','f-before','f-confidence'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function renderPagination() {
+  const el = document.getElementById('props-pagination');
+  const pages = Math.ceil(propsTotal / propsLimit);
+  const cur = Math.floor(propsOffset / propsLimit) + 1;
+  if (pages <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <button class="btn btn-secondary btn-sm" ${cur === 1 ? 'disabled' : ''} onclick="searchProperties(${(cur-2)*propsLimit})">← Prev</button>
+    <span>Page ${cur} of ${pages}</span>
+    <button class="btn btn-secondary btn-sm" ${cur >= pages ? 'disabled' : ''} onclick="searchProperties(${cur*propsLimit})">Next →</button>
+  `;
+}
+
+// ── Property detail ───────────────────────────────────────────────────────────
+async function loadDetail(propertyId) {
+  document.getElementById('detail-modal').classList.add('open');
+  document.getElementById('detail-title').textContent = `Property: ${propertyId}`;
+  document.getElementById('detail-body').innerHTML = '<div style="text-align:center;padding:32px"><span class="spinner"></span></div>';
+
+  try {
+    const resp = await apiFetch(`/api/properties/${propertyId}`);
+    const data = await resp.json();
+    renderDetail(data);
+  } catch (e) {
+    document.getElementById('detail-body').innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+  }
+}
+
+function renderDetail(data) {
+  const p = data.property;
+  const o = data.owner;
+  const usageMode = '__APP_USAGE_MODE__'; // Replaced at build time if needed
+
+  let dncBanner = '';
+  if (o && o.do_not_contact) {
+    dncBanner = `<div class="dnc-banner">🚫 DO NOT CONTACT — ${o.do_not_contact_source || 'Marked internally'}</div>`;
+  }
+
+  const fmt = v => v !== null && v !== undefined ? v : '—';
+  const fmtMoney = v => v ? '$' + Number(v).toLocaleString() : '—';
+  const fmtSqFt = v => v ? Number(v).toLocaleString() + ' sq ft' : '—';
+  const fmtSqM = v => v ? Number(v).toLocaleString() + ' sq m' : '—';
+
+  const callStatusColors = {
+    'New': 'badge-new', 'Contacted': 'badge-contacted', 'Follow Up': 'badge-follow',
+    'Interested': 'badge-interested', 'Not Interested': 'badge-not-interested',
+    'Wrong Number': 'badge-new', 'Do Not Contact': 'badge-dnc'
+  };
+
+  const currentStatus = data.callStatus.current;
+  const statusBadgeHtml = currentStatus
+    ? `<span class="badge ${callStatusColors[currentStatus] || ''}">${currentStatus}</span>`
+    : `<span class="badge badge-unmatched">No Status</span>`;
+
+  const confidenceColor = { exact_id: 'badge-exact', exact_geographic: 'badge-exact', exact_legal: 'badge-exact',
+    fuzzy_address: 'badge-fuzzy', needs_review: 'badge-review', unmatched: 'badge-unmatched' };
+
+  document.getElementById('detail-body').innerHTML = `
+    ${dncBanner}
+
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+      ${statusBadgeHtml}
+      <span style="font-size:12px;color:var(--gray-600)">Current Call Status</span>
+      <button class="btn btn-secondary btn-sm" onclick="openStatusModal('${p.id}')">Update Status</button>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <div class="detail-section-title">Property</div>
+        <div class="detail-field"><div class="detail-label">Property ID</div><div class="detail-value" style="font-family:monospace">${fmt(p.id)}</div></div>
+        <div class="detail-field"><div class="detail-label">Geographic ID</div><div class="detail-value">${fmt(p.geographic_id)}</div></div>
+        <div class="detail-field"><div class="detail-label">Property Address</div><div class="detail-value">${fmt(p.property_address)}</div></div>
+        <div class="detail-field"><div class="detail-label">City / ZIP</div><div class="detail-value">${fmt(p.city)}, ${fmt(p.state)} ${fmt(p.zip_code)}</div></div>
+        <div class="detail-field"><div class="detail-label">Use Code</div><div class="detail-value">${fmt(p.property_use_code)} — ${fmt(p.property_use_description)}</div></div>
+        <div class="detail-field"><div class="detail-label">Commercial</div><div class="detail-value">${p.commercial ? '✓ Yes' : '✗ No'}</div></div>
+        <div class="detail-field"><div class="detail-label">Legal Description</div><div class="detail-value" style="font-size:12px">${fmt(p.legal_description)}</div></div>
+      </div>
+      <div>
+        <div class="detail-section-title">Size & Value</div>
+        <div class="detail-field"><div class="detail-label">Building Area</div><div class="detail-value">${fmtSqFt(p.building_area_sq_ft)} / ${fmtSqM(p.building_area_sq_m)}</div></div>
+        <div class="detail-field"><div class="detail-label">Land Area</div><div class="detail-value">${fmtSqFt(p.land_area_sq_ft)} / ${fmt(p.land_area_acres)} acres</div></div>
+        <div class="detail-field"><div class="detail-label">Improvement Value</div><div class="detail-value">${fmtMoney(p.improvement_value)}</div></div>
+        <div class="detail-field"><div class="detail-label">Land Value</div><div class="detail-value">${fmtMoney(p.land_value)}</div></div>
+        <div class="detail-field"><div class="detail-label">Total Appraised Value</div><div class="detail-value" style="font-weight:600">${fmtMoney(p.total_appraised_value)}</div></div>
+        <div class="detail-field"><div class="detail-label">Exemption Status</div><div class="detail-value">${fmt(p.exemption_status)}</div></div>
+
+        <div class="detail-section-title">Owner${o && !o.owner_name ? ' (PII restricted)' : ''}</div>
+        ${o ? `
+          <div class="detail-field"><div class="detail-label">Owner Name</div><div class="detail-value">${fmt(o.owner_name)}</div></div>
+          <div class="detail-field"><div class="detail-label">Mailing Address</div><div class="detail-value">${fmt(o.mailing_address)}, ${fmt(o.mailing_city)}, ${fmt(o.mailing_state)} ${fmt(o.mailing_zip)}</div></div>
+        ` : '<div style="color:var(--gray-600);font-size:12px">Owner data not available.</div>'}
+      </div>
+    </div>
+
+    ${data.improvements.length ? `
+      <div class="detail-section-title">Improvements (${data.improvements.length})</div>
+      <table style="width:100%;font-size:12px"><thead><tr><th>Type</th><th>Sq Ft</th><th>Sq M</th><th>Value</th></tr></thead>
+      <tbody>${data.improvements.map(i => `<tr><td>${i.building_type||'—'}</td><td>${i.building_area_sq_ft?.toLocaleString()||'—'}</td><td>${i.building_area_sq_m?.toLocaleString()||'—'}</td><td>${i.improvement_value?'$'+i.improvement_value.toLocaleString():'—'}</td></tr>`).join('')}</tbody></table>
+    ` : ''}
+
+    ${data.oprHistory.length ? `
+      <div class="detail-section-title">OPR History (${data.oprHistory.length})</div>
+      <div class="table-wrap"><table style="font-size:12px">
+        <thead><tr><th>Document #</th><th>Type</th><th>Recorded</th><th>Grantor</th><th>Grantee</th><th>Match</th></tr></thead>
+        <tbody>${data.oprHistory.map(o => `<tr>
+          <td style="font-family:monospace">${o.document_number}</td>
+          <td>${o.document_type||'—'}</td>
+          <td>${o.recording_date||'—'}</td>
+          <td>${o.grantor||'—'}</td>
+          <td>${o.grantee||'—'}</td>
+          <td><span class="badge ${confidenceColor[o.match_confidence]||''}">${o.match_confidence}</span></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    ` : ''}
+
+    <div class="detail-section-title">Notes</div>
+    <div id="notes-list-${p.id}" style="margin-bottom:8px">
+      ${data.notes.length ? data.notes.map(n => `<div style="padding:6px 0;border-bottom:1px solid var(--gray-100);font-size:12px"><div style="color:var(--gray-600);font-size:11px">${new Date(n.created_at).toLocaleString()}</div>${n.note}</div>`).join('') : '<div style="color:var(--gray-600);font-size:12px">No notes yet.</div>'}
+    </div>
+    <div style="display:flex;gap:8px">
+      <textarea id="note-input-${p.id}" placeholder="Add a note…" style="flex:1;min-height:60px"></textarea>
+      <button class="btn btn-secondary" style="align-self:flex-end" onclick="addNote('${p.id}')">Add Note</button>
+    </div>
+
+    <div class="detail-section-title">Call Status History</div>
+    <div style="font-size:12px">
+      ${data.callStatus.history.length ? data.callStatus.history.map(s => `<div style="padding:4px 0;border-bottom:1px solid var(--gray-100)"><span class="badge ${callStatusColors[s.status]||''}">${s.status}</span> <span style="color:var(--gray-600)">${new Date(s.changed_at).toLocaleString()}</span>${s.note ? ` — ${s.note}` : ''}</div>`).join('') : '<div style="color:var(--gray-600)">No status history.</div>'}
+    </div>
+
+    <div style="margin-top:16px;font-size:11px;color:var(--gray-600)">
+      Data source: ${p.data_source||'—'} · Last updated: ${p.last_updated ? new Date(p.last_updated).toLocaleString() : '—'}
+    </div>
+  `;
+}
+
+async function addNote(propertyId) {
+  const input = document.getElementById(`note-input-${propertyId}`);
+  const note = input.value.trim();
+  if (!note) return;
+  try {
+    await apiFetch(`/api/properties/${propertyId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    input.value = '';
+    loadDetail(propertyId);
+  } catch (e) {
+    alert('Failed to add note: ' + e.message);
+  }
+}
+
+// ── Status modal ──────────────────────────────────────────────────────────────
+let pendingStatusPropertyId = null;
+
+function openStatusModal(propertyId) {
+  pendingStatusPropertyId = propertyId;
+  document.getElementById('status-modal').classList.add('open');
+}
+
+// ── Export ────────────────────────────────────────────────────────────────────
+async function startExport() {
+  const statusEl = document.getElementById('export-status');
+  statusEl.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Starting export…</div>';
+
+  const val = id => document.getElementById(id).value;
+  const filters = {};
+  if (val('e-city')) filters.city = val('e-city');
+  if (val('e-commercial')) filters.commercial = val('e-commercial');
+  if (val('e-min-sqft')) filters.minBuildingSqFt = val('e-min-sqft');
+  if (val('e-max-sqft')) filters.maxBuildingSqFt = val('e-max-sqft');
+  if (val('e-min-sqm')) filters.minBuildingSqM = val('e-min-sqm');
+  if (val('e-max-sqm')) filters.maxBuildingSqM = val('e-max-sqm');
+  if (val('e-use')) filters.propertyUse = val('e-use');
+  if (val('e-confidence')) filters.matchConfidence = val('e-confidence');
+
+  try {
+    const resp = await apiFetch('/api/exports/commercial-properties', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(filters)
+    });
+    const data = await resp.json();
+    statusEl.innerHTML = `<div class="alert alert-success">✓ Export queued — Job ${data.jobId}. Polling for completion…</div>`;
+    pollExport(data.jobId, statusEl);
+  } catch (e) {
+    statusEl.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+  }
+}
+
+function pollExport(jobId, statusEl) {
+  const interval = setInterval(async () => {
+    try {
+      const resp = await apiFetch(`/api/jobs/${jobId}`);
+      const job = await resp.json();
+      if (job.status === 'completed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="alert alert-success">
+          ✓ Export ready — ${job.totalRecords} rows
+          <a href="${job.downloadUrl}" class="btn btn-primary btn-sm" style="margin-left:8px">⬇ Download CSV</a>
+        </div>`;
+      } else if (job.status === 'failed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="alert alert-error">✗ Export failed: ${job.errors[0]||'Unknown error'}</div>`;
+      }
+    } catch { clearInterval(interval); }
+  }, 3000);
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function closeModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
+document.getElementById('detail-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Keyboard shortcut: Escape closes modal
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>
+
+<!-- Status update modal -->
+<div class="modal-backdrop" id="status-modal">
+  <div class="modal" style="min-width:340px">
+    <div class="modal-title">Update Call Status</div>
+    <div style="margin-bottom:12px">
+      <label>Status</label>
+      <select id="status-select">
+        <option>New</option>
+        <option>Contacted</option>
+        <option>Follow Up</option>
+        <option>Interested</option>
+        <option>Not Interested</option>
+        <option>Wrong Number</option>
+        <option>Do Not Contact</option>
+      </select>
+    </div>
+    <div style="margin-bottom:12px">
+      <label>Note (optional)</label>
+      <textarea id="status-note" placeholder="Optional note for this status change"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('status-modal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitStatus()">Save Status</button>
+    </div>
+  </div>
+</div>
+
+<script>
+async function submitStatus() {
+  if (!pendingStatusPropertyId) return;
+  const status = document.getElementById('status-select').value;
+  const note = document.getElementById('status-note').value.trim();
+  try {
+    await apiFetch(`/api/properties/${pendingStatusPropertyId}/call-status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, note: note || undefined })
+    });
+    document.getElementById('status-modal').classList.remove('open');
+    loadDetail(pendingStatusPropertyId);
+  } catch (e) {
+    alert('Failed to update status: ' + e.message);
+  }
+}
+</script>
+
+</body>
+</html>
