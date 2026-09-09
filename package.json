@@ -1,5 +1,5 @@
 {
-  "name": "bexar-property-research",
+  "name": "SA-property-research",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,8 +8,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "cf-typegen": "wrangler types",
-    "db:migrate:local": "wrangler d1 migrations apply bexar-property-research --local",
-    "db:migrate:remote": "wrangler d1 migrations apply bexar-property-research --remote"
+    "db:migrate:local": "wrangler d1 migrations apply sa-property-research-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply sa-property-research-db --remote"
   },
   "dependencies": {},
   "devDependencies": {

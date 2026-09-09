@@ -1,5 +1,5 @@
 {
-  "name": "bexar-property-research",
+  "name": "sa-property-research",
   "main": "src/worker.ts",
   "compatibility_date": "2024-12-01",
   "compatibility_flags": ["nodejs_compat"],
@@ -13,10 +13,10 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "bexar-property-research",
-      // Run: wrangler d1 create bexar-property-research
+      "database_name": "sa-property-research-db",
+      // Run: wrangler d1 create SA-property-research
       // Then paste the database_id here
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "database_id": "9f376fd8-794c-4a13-9640-058b75205eb2",
       "migrations_dir": "src/db/migrations"
     }
   ],
@@ -25,8 +25,8 @@
   "r2_buckets": [
     {
       "binding": "FILES_BUCKET",
-      "bucket_name": "bexar-property-research-files"
-      // Run: wrangler r2 bucket create bexar-property-research-files
+      "bucket_name": "sa-property-research-files"
+      // Run: wrangler r2 bucket create SA-property-research-files
     }
   ],
 

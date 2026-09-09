@@ -111,7 +111,7 @@ npm run dev
 In local dev mode (no Cloudflare Access), pass `X-User-Email: your@email.com` in request headers to authenticate. The first email seen is auto-created as a `viewer`. Promote to admin directly in the local D1:
 
 ```bash
-wrangler d1 execute bexar-property-research --local \
+wrangler d1 execute SA-property-research --local \
   --command "UPDATE users SET role='admin' WHERE email='your@email.com'"
 ```
 
@@ -128,7 +128,7 @@ npm test
 ### 1. Create D1 database
 
 ```bash
-wrangler d1 create bexar-property-research
+wrangler d1 create SA-property-research
 # Copy the database_id from the output
 ```
 
@@ -143,7 +143,7 @@ npm run db:migrate:remote
 ### 3. Create R2 bucket
 
 ```bash
-wrangler r2 bucket create bexar-property-research-files
+wrangler r2 bucket create SA-property-research-files
 ```
 
 ### 4. Create Queues
@@ -179,7 +179,7 @@ npm run deploy
 ### 7. Promote your first admin
 
 ```bash
-wrangler d1 execute bexar-property-research --remote \
+wrangler d1 execute SA-property-research --remote \
   --command "UPDATE users SET role='admin' WHERE email='your@email.com'"
 ```
 
