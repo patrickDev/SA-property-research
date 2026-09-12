@@ -612,7 +612,6 @@ async function loadDetail(propertyId) {
 function renderDetail(data) {
   const p = data.property;
   const o = data.owner;
-  const usageMode = '__APP_USAGE_MODE__'; // Replaced at build time if needed
 
   let dncBanner = '';
   if (o && o.do_not_contact) {

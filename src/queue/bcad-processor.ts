@@ -114,6 +114,11 @@ export async function processBcadImport(
     .bind(rows.length, now, job.id)
     .run();
 
+  // Track which properties have had their improvements cleared this run.
+  // The first CSV row for a property deletes its old improvements; subsequent
+  // rows for the same property (additional buildings) only append.
+  const clearedImprovements = new Set<string>();
+
   // Process in batches of 50 (D1 batch limit is 100 statements)
   const BATCH = 50;
   for (let i = 0; i < rows.length; i += BATCH) {
@@ -128,7 +133,7 @@ export async function processBcadImport(
       }
 
       try {
-        await upsertBcadRow(env, row, dataSource, fileHash, now);
+        await upsertBcadRow(env, row, dataSource, fileHash, now, clearedImprovements);
         processed++;
       } catch (err) {
         failed++;
@@ -172,7 +177,8 @@ async function upsertBcadRow(
   row: BcadCsvRow,
   dataSource: string,
   fileHash: string,
-  now: string
+  now: string,
+  clearedImprovements: Set<string>
 ): Promise<void> {
   const { normalized: addrNorm } = normalizeAddress(row.propertyAddress);
   const legalNorm = normalizeLegalDescription(row.legalDescription);
@@ -255,16 +261,7 @@ async function upsertBcadRow(
     )
     .run();
 
-  // Upsert owner (replace if same property_id already present)
-  await env.DB.prepare(
-    `INSERT INTO owners
-       (property_id, owner_name, mailing_address, mailing_city,
-        mailing_state, mailing_zip, data_source, import_date, last_updated)
-     VALUES (?,?,?,?,?,?,?,?,?)
-     ON CONFLICT(rowid) DO NOTHING`
-  );
-  // Since owners doesn't have a unique constraint on property_id,
-  // we DELETE+INSERT to keep one row per property.
+  // Upsert owner: DELETE+INSERT to keep one row per property.
   await env.DB.prepare(
     "DELETE FROM owners WHERE property_id = ?"
   )
@@ -290,14 +287,18 @@ async function upsertBcadRow(
     )
     .run();
 
-  // Upsert improvement (one per CSV row; BCAD may have multi-row properties)
-  // Delete existing improvements for this property first, then re-insert
-  // so aggregates stay accurate.
-  await env.DB.prepare(
-    "DELETE FROM property_improvements WHERE property_id = ?"
-  )
-    .bind(row.propertyId)
-    .run();
+  // Clear existing improvements once per property per import run, then append.
+  // Using a Set ensures multi-building properties (multiple CSV rows with the
+  // same propertyId) accumulate all their improvements rather than each row
+  // overwriting the previous one.
+  if (!clearedImprovements.has(row.propertyId)) {
+    await env.DB.prepare(
+      "DELETE FROM property_improvements WHERE property_id = ?"
+    )
+      .bind(row.propertyId)
+      .run();
+    clearedImprovements.add(row.propertyId);
+  }
 
   if (hasBuildingArea) {
     await env.DB.prepare(

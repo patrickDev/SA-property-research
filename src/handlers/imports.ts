@@ -106,10 +106,7 @@ async function handleImport(
     .run();
 
   // Enqueue processing
-  const queue =
-    jobType === "bcad_import" ? env.IMPORT_QUEUE : env.IMPORT_QUEUE;
-
-  await queue.send({
+  await env.IMPORT_QUEUE.send({
     jobId,
     type: jobType,
     batchOffset: 0,
