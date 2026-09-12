@@ -3,304 +3,717 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bexar County Commercial Property Research</title>
+  <title>SA Commercial Property Research</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --blue: #1a56db;
-      --blue-dark: #1e429f;
-      --blue-light: #e8f0fe;
-      --green: #057a55;
-      --green-light: #def7ec;
-      --yellow: #9f580a;
-      --yellow-light: #fdf6b2;
-      --red: #c81e1e;
-      --red-light: #fde8e8;
-      --gray-50: #f9fafb;
-      --gray-100: #f3f4f6;
-      --gray-200: #e5e7eb;
-      --gray-300: #d1d5db;
-      --gray-600: #4b5563;
-      --gray-700: #374151;
-      --gray-800: #1f2937;
-      --gray-900: #111827;
-      --radius: 6px;
-      --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+    /* ── Reset ─────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      background: #f8fafc;
+      min-height: 100vh;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; color: var(--gray-800); background: var(--gray-50); min-height: 100vh; }
-    a { color: var(--blue); text-decoration: none; }
+    @media (max-width: 640px) {
+      body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+    }
+    a { color: #4f46e5; text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* Layout */
-    header { background: var(--blue-dark); color: #fff; padding: 0 24px; display: flex; align-items: center; height: 56px; gap: 16px; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
-    header h1 { font-size: 16px; font-weight: 600; flex: 1; }
-    #user-badge { font-size: 12px; background: rgba(255,255,255,.15); padding: 4px 10px; border-radius: 20px; }
-    nav { background: #fff; border-bottom: 1px solid var(--gray-200); padding: 0 24px; display: flex; gap: 0; }
-    nav button { background: none; border: none; padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--gray-600); cursor: pointer; border-bottom: 2px solid transparent; transition: .15s; }
-    nav button.active, nav button:hover { color: var(--blue); border-bottom-color: var(--blue); }
-    main { padding: 24px; max-width: 1280px; margin: 0 auto; }
-
-    /* Cards */
-    .card { background: #fff; border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
-    .card-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--gray-800); }
-
-    /* Grid */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    @media (max-width: 900px) { .grid-4 { grid-template-columns: 1fr 1fr; } .grid-3 { grid-template-columns: 1fr 1fr; } }
-    @media (max-width: 600px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
-
-    /* Forms */
-    label { display: block; font-size: 12px; font-weight: 500; color: var(--gray-700); margin-bottom: 4px; }
-    input, select, textarea {
-      width: 100%; padding: 7px 10px; border: 1px solid var(--gray-300);
-      border-radius: var(--radius); font-size: 13px; color: var(--gray-800);
-      background: #fff; transition: border-color .15s;
+    /* ── Variables ─────────────────────────────────────────────────── */
+    :root {
+      --primary:        #4f46e5;
+      --primary-hover:  #4338ca;
+      --primary-light:  #eef2ff;
+      --primary-border: #c7d2fe;
+      --success:        #059669;
+      --success-light:  #d1fae5;
+      --success-border: #6ee7b7;
+      --warning:        #d97706;
+      --warning-light:  #fffbeb;
+      --warning-border: #fcd34d;
+      --danger:         #dc2626;
+      --danger-light:   #fee2e2;
+      --danger-border:  #fca5a5;
+      --gray-50:  #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-400: #94a3b8;
+      --gray-500: #64748b;
+      --gray-600: #475569;
+      --gray-700: #334155;
+      --gray-800: #1e293b;
+      --gray-900: #0f172a;
+      --radius-sm: 6px;
+      --radius:    10px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+      --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md: 0 4px 6px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.04);
+      --shadow-lg: 0 20px 40px rgba(0,0,0,.1), 0 8px 16px rgba(0,0,0,.06);
     }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,86,219,.15); }
-    textarea { min-height: 80px; resize: vertical; }
 
-    /* Buttons */
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; transition: .15s; }
-    .btn-primary { background: var(--blue); color: #fff; }
-    .btn-primary:hover { background: var(--blue-dark); }
-    .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
-    .btn-secondary:hover { background: var(--gray-200); }
-    .btn-danger { background: var(--red-light); color: var(--red); border: 1px solid #fca5a5; }
-    .btn-sm { padding: 4px 10px; font-size: 12px; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    /* ── Header ────────────────────────────────────────────────────── */
+    header {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      height: 58px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 0;
+    }
+    .header-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-icon svg { width: 17px; height: 17px; color: #fff; }
+    .header-brand h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-900);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    @media (max-width: 500px) { .header-brand h1 { display: none; } }
+    #user-badge {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-600);
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      padding: 4px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
 
-    /* Badges */
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-    .badge-new { background: var(--blue-light); color: var(--blue-dark); }
-    .badge-contacted { background: var(--green-light); color: var(--green); }
-    .badge-follow { background: var(--yellow-light); color: var(--yellow); }
-    .badge-interested { background: #d1fae5; color: #065f46; }
-    .badge-not-interested { background: var(--red-light); color: var(--red); }
-    .badge-dnc { background: #1f2937; color: #f9fafb; }
-    .badge-exact { background: var(--green-light); color: var(--green); }
-    .badge-fuzzy { background: var(--yellow-light); color: var(--yellow); }
-    .badge-review { background: var(--red-light); color: var(--red); }
-    .badge-unmatched { background: var(--gray-100); color: var(--gray-600); }
+    /* ── Navigation ────────────────────────────────────────────────── */
+    nav {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 20px;
+      display: flex;
+      gap: 2px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    nav::-webkit-scrollbar { display: none; }
+    nav button {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 13px 14px 11px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      color: var(--gray-500);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color .15s, border-color .15s;
+    }
+    /* prevent child SVG/span from being the event.target */
+    nav button > * { pointer-events: none; }
+    nav button svg { width: 15px; height: 15px; flex-shrink: 0; }
+    nav button.active, nav button:hover { color: var(--primary); border-bottom-color: var(--primary); }
 
-    /* Table */
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    thead th { background: var(--gray-50); text-align: left; padding: 8px 12px; font-weight: 600; color: var(--gray-600); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
-    tbody td { padding: 9px 12px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
-    tbody tr:hover { background: var(--blue-light); }
-    tbody tr:hover td { cursor: pointer; }
+    /* Mobile: fixed bottom bar */
+    @media (max-width: 640px) {
+      nav {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        border-bottom: none;
+        border-top: 1px solid var(--gray-200);
+        padding: 0 0 env(safe-area-inset-bottom, 0px);
+        z-index: 100;
+        justify-content: stretch;
+        background: rgba(255,255,255,.96);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      nav button {
+        flex: 1;
+        flex-direction: column;
+        gap: 3px;
+        padding: 9px 4px 8px;
+        font-size: 10px;
+        border-bottom: none;
+        border-top: 2px solid transparent;
+        justify-content: center;
+      }
+      nav button.active, nav button:hover {
+        border-bottom: none;
+        border-top-color: var(--primary);
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+      nav button svg { width: 20px; height: 20px; }
+    }
 
-    /* Alerts */
-    .alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: 16px; font-size: 13px; }
-    .alert-error { background: var(--red-light); color: var(--red); border: 1px solid #fca5a5; }
-    .alert-success { background: var(--green-light); color: var(--green); border: 1px solid #6ee7b7; }
-    .alert-info { background: var(--blue-light); color: var(--blue-dark); border: 1px solid #93c5fd; }
-    .alert-warn { background: var(--yellow-light); color: var(--yellow); border: 1px solid #fcd34d; }
+    /* ── Layout ────────────────────────────────────────────────────── */
+    main { padding: 24px; max-width: 1320px; margin: 0 auto; }
+    @media (max-width: 640px) { main { padding: 16px; } }
 
-    /* Progress */
-    .progress-bar { height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--blue); transition: width .3s; }
-
-    /* Sections */
     .section { display: none; }
     .section.active { display: block; }
 
-    /* Upload zone */
-    .upload-zone { border: 2px dashed var(--gray-300); border-radius: var(--radius); padding: 32px; text-align: center; transition: .15s; }
-    .upload-zone:hover, .upload-zone.dragover { border-color: var(--blue); background: var(--blue-light); }
-    .upload-zone input { display: none; }
-    .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
-    .upload-zone .hint { color: var(--gray-600); font-size: 12px; margin-top: 4px; }
+    /* ── Page header ───────────────────────────────────────────────── */
+    .page-hd { margin-bottom: 20px; }
+    .page-hd-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .page-title { font-size: 19px; font-weight: 700; color: var(--gray-900); }
+    .page-sub { font-size: 13px; color: var(--gray-500); margin-top: 1px; }
 
-    /* Detail panel */
-    .detail-field { margin-bottom: 12px; }
-    .detail-label { font-size: 11px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: .05em; }
-    .detail-value { margin-top: 2px; font-size: 13px; }
-    .detail-section-title { font-size: 13px; font-weight: 600; color: var(--gray-700); padding: 10px 0 6px; border-top: 1px solid var(--gray-200); margin-top: 10px; }
+    /* ── Cards ─────────────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card + .card { margin-top: 16px; }
+    .card-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-800);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-icon {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
 
-    /* Tag */
-    .tag { display: inline-block; font-size: 11px; padding: 1px 6px; background: var(--gray-100); border-radius: 3px; color: var(--gray-600); }
+    /* ── Grid ──────────────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 900px) { .grid-4 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 400px) { .grid-4 { grid-template-columns: 1fr; } }
 
-    /* Pagination */
-    .pagination { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 16px; font-size: 13px; color: var(--gray-600); }
+    /* ── Forms ─────────────────────────────────────────────────────── */
+    label { display: block; font-size: 12px; font-weight: 500; color: var(--gray-700); margin-bottom: 4px; }
+    input, select, textarea {
+      width: 100%; padding: 8px 10px;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-family: inherit;
+      color: var(--gray-800); background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      -webkit-appearance: none; appearance: none;
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 16px;
+      padding-right: 28px;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+    }
+    input::placeholder { color: var(--gray-400); }
+    textarea { min-height: 72px; resize: vertical; }
 
-    /* DNC banner */
-    .dnc-banner { background: #1f2937; color: #f9fafb; padding: 10px 16px; border-radius: var(--radius); margin-bottom: 12px; font-size: 13px; font-weight: 600; }
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 8px 16px;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; font-family: inherit;
+      cursor: pointer; white-space: nowrap; line-height: 1;
+      transition: background .15s, border-color .15s, transform .1s, opacity .15s;
+    }
+    .btn:active:not(:disabled) { transform: scale(.98); }
+    .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 1px 2px rgba(79,70,229,.25); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-300); }
+    .btn-secondary:hover { background: var(--gray-50); border-color: var(--gray-400); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
 
-    /* Spinner */
+    /* ── Badges ────────────────────────────────────────────────────── */
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 9px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; letter-spacing: .01em;
+    }
+    .badge-new            { background: var(--primary-light); color: var(--primary); }
+    .badge-contacted      { background: var(--success-light); color: var(--success); }
+    .badge-follow         { background: var(--warning-light); color: var(--warning); }
+    .badge-interested     { background: #d1fae5; color: #065f46; }
+    .badge-not-interested { background: var(--danger-light);  color: var(--danger); }
+    .badge-dnc            { background: var(--gray-900); color: var(--gray-50); }
+    .badge-exact          { background: var(--success-light); color: var(--success); }
+    .badge-fuzzy          { background: var(--warning-light); color: var(--warning); }
+    .badge-review         { background: var(--danger-light);  color: var(--danger); }
+    .badge-unmatched      { background: var(--gray-100); color: var(--gray-500); }
+    .badge-pending        { background: var(--primary-light); color: var(--primary); }
+    .badge-processing     { background: var(--warning-light); color: var(--warning); }
+    .badge-completed      { background: var(--success-light); color: var(--success); }
+    .badge-failed         { background: var(--danger-light);  color: var(--danger); }
+
+    /* ── Alerts ────────────────────────────────────────────────────── */
+    .alert {
+      padding: 11px 14px; border-radius: var(--radius-sm);
+      margin-bottom: 12px; font-size: 13px;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .alert-error   { background: var(--danger-light);  color: var(--danger);  border: 1px solid var(--danger-border); }
+    .alert-success { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+    .alert-info    { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border); }
+    .alert-warn    { background: var(--warning-light); color: var(--warning); border: 1px solid var(--warning-border); }
+
+    /* ── Progress ──────────────────────────────────────────────────── */
+    .progress-bar { height: 4px; background: rgba(255,255,255,.4); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; background: currentColor; border-radius: 2px; transition: width .4s ease; opacity: .8; }
+
+    /* ── Upload zone ───────────────────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed var(--gray-300);
+      border-radius: var(--radius);
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .upload-zone input[type="file"] { display: none; }
+    .upload-icon {
+      width: 44px; height: 44px;
+      background: var(--gray-100);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 10px;
+      color: var(--gray-400);
+      transition: background .15s, color .15s;
+    }
+    .upload-zone:hover .upload-icon,
+    .upload-zone.dragover .upload-icon { background: #fff; color: var(--primary); }
+    .upload-icon svg { width: 20px; height: 20px; }
+    .upload-label { font-size: 13px; color: var(--gray-600); }
+    .upload-label strong { color: var(--primary); }
+    .upload-hint { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+
+    /* ── Table ─────────────────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+    thead th {
+      background: var(--gray-50); text-align: left;
+      padding: 9px 14px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--gray-500);
+      border-bottom: 1px solid var(--gray-200); white-space: nowrap;
+    }
+    tbody td {
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-700);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--gray-50); cursor: pointer; }
+
+    /* ── Detail fields ─────────────────────────────────────────────── */
+    .dl { margin-bottom: 12px; }
+    .dl-label {
+      font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .07em;
+      color: var(--gray-400); margin-bottom: 2px;
+    }
+    .dl-value { font-size: 13px; color: var(--gray-800); }
+    .section-rule {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--gray-400);
+      padding: 14px 0 8px;
+      border-top: 1px solid var(--gray-100);
+      margin-top: 6px;
+    }
+
+    /* ── Tag ───────────────────────────────────────────────────────── */
+    .tag {
+      display: inline-block; font-size: 11px; font-weight: 500;
+      padding: 2px 8px; margin: 2px;
+      background: var(--gray-100); border-radius: 4px; color: var(--gray-600);
+    }
+
+    /* ── Pagination ────────────────────────────────────────────────── */
+    .pagination {
+      display: flex; gap: 8px; align-items: center;
+      justify-content: flex-end; margin-top: 16px;
+      font-size: 13px; color: var(--gray-500);
+    }
+
+    /* ── DNC banner ────────────────────────────────────────────────── */
+    .dnc-banner {
+      background: var(--gray-900); color: var(--gray-50);
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      margin-bottom: 16px; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── Spinner ───────────────────────────────────────────────────── */
     @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--gray-200); border-top-color: var(--blue); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; }
+    .spinner {
+      display: inline-block;
+      width: 15px; height: 15px;
+      border: 2px solid var(--gray-200);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin .65s linear infinite;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
 
-    /* Modal */
-    .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 200; align-items: center; justify-content: center; }
+    /* ── Modal ─────────────────────────────────────────────────────── */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0;
+      background: rgba(15,23,42,.5); z-index: 200;
+      align-items: center; justify-content: center;
+      padding: 16px;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
     .modal-backdrop.open { display: flex; }
-    .modal { background: #fff; border-radius: 8px; padding: 24px; min-width: 420px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
-    .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-    .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+    .modal {
+      background: #fff; border-radius: var(--radius-lg);
+      padding: 24px; width: 100%; max-width: 580px;
+      box-shadow: var(--shadow-lg);
+      max-height: 90vh; overflow-y: auto;
+    }
+    @media (max-width: 640px) {
+      .modal-backdrop { align-items: flex-end; padding: 0; }
+      .modal {
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        max-width: 100%; max-height: 92vh;
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      }
+    }
+    .modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .modal-title { font-size: 16px; font-weight: 700; color: var(--gray-900); }
+    .modal-close {
+      width: 30px; height: 30px;
+      background: var(--gray-100); border: none; border-radius: 6px;
+      color: var(--gray-500); font-size: 15px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s; flex-shrink: 0; font-family: inherit;
+    }
+    .modal-close:hover { background: var(--gray-200); color: var(--gray-800); }
+    .modal-footer {
+      display: flex; gap: 8px; justify-content: flex-end;
+      margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--gray-100);
+    }
+
+    /* ── Empty state ───────────────────────────────────────────────── */
+    .empty {
+      text-align: center; padding: 40px 24px; color: var(--gray-400);
+    }
+    .empty-icon { font-size: 32px; margin-bottom: 10px; opacity: .7; }
+    .empty-text { font-size: 14px; color: var(--gray-500); font-weight: 500; }
+    .empty-hint { font-size: 12px; color: var(--gray-400); margin-top: 3px; }
+
+    /* ── Filter toggle (mobile) ────────────────────────────────────── */
+    .filter-toggle-btn {
+      display: none;
+      align-items: center; gap: 6px;
+      background: none; border: none;
+      font: 500 13px/1 inherit; color: var(--primary);
+      cursor: pointer; padding: 0; margin-bottom: 14px;
+    }
+    .filter-toggle-btn svg { pointer-events: none; }
+    @media (max-width: 640px) {
+      .filter-toggle-btn { display: inline-flex; }
+      .filters-body.collapsed { display: none; }
+    }
   </style>
 </head>
 <body>
 
+<!-- ── Header ──────────────────────────────────────────────────────── -->
 <header>
-  <h1>🏢 Bexar County Commercial Property Research</h1>
-  <span id="user-badge">Loading…</span>
+  <div class="header-brand">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    <h1>Bexar County Property Research</h1>
+  </div>
+  <span id="user-badge">Connecting…</span>
 </header>
 
+<!-- ── Navigation ──────────────────────────────────────────────────── -->
 <nav>
-  <button class="active" onclick="showSection('upload')">Upload</button>
-  <button onclick="showSection('jobs')">Jobs</button>
-  <button onclick="showSection('properties')">Properties</button>
-  <button onclick="showSection('export')">Export</button>
+  <button class="active" onclick="showSection('upload')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <span>Upload</span>
+  </button>
+  <button onclick="showSection('jobs')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+    <span>Jobs</span>
+  </button>
+  <button onclick="showSection('properties')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    <span>Properties</span>
+  </button>
+  <button onclick="showSection('export')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    <span>Export</span>
+  </button>
 </nav>
 
 <main>
-  <!-- ── Upload ────────────────────────────────────────────────────── -->
+
+  <!-- ── Upload ──────────────────────────────────────────────────── -->
   <section id="upload" class="section active">
-    <div class="grid-2" style="gap:20px">
-      <!-- BCAD -->
+    <div class="page-hd">
+      <div class="page-title">Import Data</div>
+      <div class="page-sub">Upload BCAD or OPR CSV files to import property records</div>
+    </div>
+
+    <div class="grid-2">
       <div class="card">
-        <div class="card-title">📂 Upload BCAD Data</div>
-        <p style="color:var(--gray-600);font-size:12px;margin-bottom:16px">
-          Upload a CSV exported from the Bexar County Appraisal District.
-          Excel files must be saved as CSV before uploading.
+        <div class="card-hd">
+          <div class="card-title">
+            <div class="card-icon" style="background:#ede9fe;color:#7c3aed">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            </div>
+            BCAD Data
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--gray-500);margin-bottom:16px">
+          Upload a CSV exported from the Bexar County Appraisal District. Excel files must be saved as CSV first.
         </p>
         <div class="upload-zone" id="bcad-zone">
-          <div class="icon">📄</div>
-          <div>Drag & drop CSV file here, or <label for="bcad-file" style="color:var(--blue);cursor:pointer;display:inline">browse</label></div>
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="upload-label">Drop CSV here or <strong><label for="bcad-file" style="cursor:pointer">browse</label></strong></div>
+          <div class="upload-hint">Accepted: .csv &middot; Max 50 MB</div>
           <input type="file" id="bcad-file" accept=".csv,text/csv" />
-          <div class="hint">Accepted: .csv · Max 50 MB</div>
         </div>
-        <div id="bcad-file-name" style="margin:8px 0;font-size:12px;color:var(--gray-600)"></div>
-        <button class="btn btn-primary" id="bcad-upload-btn" onclick="uploadFile('bcad')" disabled>Upload BCAD File</button>
-        <div id="bcad-status" style="margin-top:10px"></div>
+        <div id="bcad-file-name" style="margin:8px 0;font-size:12px;color:var(--gray-500)"></div>
+        <button class="btn btn-primary" id="bcad-upload-btn" onclick="uploadFile('bcad')" disabled style="width:100%">Upload BCAD File</button>
+        <div id="bcad-status" style="margin-top:12px"></div>
       </div>
 
-      <!-- OPR -->
       <div class="card">
-        <div class="card-title">📜 Upload OPR Data</div>
-        <p style="color:var(--gray-600);font-size:12px;margin-bottom:16px">
-          Upload Official Public Records data received via a public-records request
-          from Bexar County. Only documented, permitted bulk-export data.
+        <div class="card-hd">
+          <div class="card-title">
+            <div class="card-icon" style="background:#fef3c7;color:#b45309">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </div>
+            OPR Data
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--gray-500);margin-bottom:16px">
+          Upload Official Public Records data from a public-records request. Only documented, permitted bulk-export data.
         </p>
         <div class="upload-zone" id="opr-zone">
-          <div class="icon">📄</div>
-          <div>Drag & drop CSV file here, or <label for="opr-file" style="color:var(--blue);cursor:pointer;display:inline">browse</label></div>
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <div class="upload-label">Drop CSV here or <strong><label for="opr-file" style="cursor:pointer">browse</label></strong></div>
+          <div class="upload-hint">Accepted: .csv &middot; Max 50 MB</div>
           <input type="file" id="opr-file" accept=".csv,text/csv" />
-          <div class="hint">Accepted: .csv · Max 50 MB</div>
         </div>
-        <div id="opr-file-name" style="margin:8px 0;font-size:12px;color:var(--gray-600)"></div>
-        <button class="btn btn-primary" id="opr-upload-btn" onclick="uploadFile('opr')" disabled>Upload OPR File</button>
-        <div id="opr-status" style="margin-top:10px"></div>
+        <div id="opr-file-name" style="margin:8px 0;font-size:12px;color:var(--gray-500)"></div>
+        <button class="btn btn-primary" id="opr-upload-btn" onclick="uploadFile('opr')" disabled style="width:100%">Upload OPR File</button>
+        <div id="opr-status" style="margin-top:12px"></div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:20px">
-      <div class="card-title">📋 Expected CSV Columns</div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title" style="margin-bottom:14px">Expected CSV Columns</div>
       <div class="grid-2">
         <div>
-          <strong style="font-size:12px">BCAD CSV columns (flexible aliases accepted):</strong>
-          <div class="tag" style="margin:8px 0">Property ID</div>
-          <div class="tag">Geographic ID</div>
-          <div class="tag">Owner Name</div>
-          <div class="tag">Mailing Address</div>
-          <div class="tag">Property Address</div>
-          <div class="tag">Legal Description</div>
-          <div class="tag">Property Use Code</div>
-          <div class="tag">Building Type</div>
-          <div class="tag">Building Area (Sq Ft)</div>
-          <div class="tag">Land Area (Acres)</div>
-          <div class="tag">Total Appraised Value</div>
-          <div style="margin-top:8px"><a href="/samples/bcad-sample.csv" download>⬇ Download sample BCAD CSV</a></div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);margin-bottom:8px">BCAD columns</div>
+          <div>
+            <span class="tag">Property ID</span><span class="tag">Geographic ID</span>
+            <span class="tag">Owner Name</span><span class="tag">Mailing Address</span>
+            <span class="tag">Property Address</span><span class="tag">Legal Description</span>
+            <span class="tag">Property Use Code</span><span class="tag">Building Type</span>
+            <span class="tag">Building Area (Sq Ft)</span><span class="tag">Land Area (Acres)</span>
+            <span class="tag">Total Appraised Value</span>
+          </div>
+          <div style="margin-top:10px"><a href="/samples/bcad-sample.csv" download style="font-size:12px">&#8595; Download sample BCAD CSV</a></div>
         </div>
         <div>
-          <strong style="font-size:12px">OPR CSV columns (flexible aliases accepted):</strong>
-          <div class="tag" style="margin:8px 0">Document Number</div>
-          <div class="tag">Recording Date</div>
-          <div class="tag">Document Type</div>
-          <div class="tag">Grantor</div>
-          <div class="tag">Grantee</div>
-          <div class="tag">Legal Description</div>
-          <div class="tag">Property Address</div>
-          <div style="margin-top:8px"><a href="/samples/opr-sample.csv" download>⬇ Download sample OPR CSV</a></div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);margin-bottom:8px">OPR columns</div>
+          <div>
+            <span class="tag">Document Number</span><span class="tag">Recording Date</span>
+            <span class="tag">Document Type</span><span class="tag">Grantor</span>
+            <span class="tag">Grantee</span><span class="tag">Legal Description</span>
+            <span class="tag">Property Address</span>
+          </div>
+          <div style="margin-top:10px"><a href="/samples/opr-sample.csv" download style="font-size:12px">&#8595; Download sample OPR CSV</a></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ── Jobs ─────────────────────────────────────────────────────── -->
+  <!-- ── Jobs ────────────────────────────────────────────────────── -->
   <section id="jobs" class="section">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div class="card-title" style="margin:0">Recent Jobs</div>
-        <button class="btn btn-secondary btn-sm" onclick="loadJobs()">↻ Refresh</button>
+    <div class="page-hd">
+      <div class="page-hd-row">
+        <div>
+          <div class="page-title">Jobs</div>
+          <div class="page-sub">Track the status of all import and export operations</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadJobs()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+          </svg>
+          Refresh
+        </button>
       </div>
-      <div id="jobs-list"><div class="alert alert-info">Loading jobs…</div></div>
+    </div>
+    <div class="card">
+      <div id="jobs-list">
+        <div class="alert alert-info"><span class="spinner"></span> Loading…</div>
+      </div>
     </div>
   </section>
 
-  <!-- ── Properties ────────────────────────────────────────────────── -->
+  <!-- ── Properties ──────────────────────────────────────────────── -->
   <section id="properties" class="section">
-    <!-- Filters -->
+    <div class="page-hd">
+      <div class="page-title">Properties</div>
+      <div class="page-sub">Search and explore Bexar County commercial properties</div>
+    </div>
+
     <div class="card" style="margin-bottom:16px">
-      <div class="card-title">🔍 Search Filters</div>
-      <div class="grid-4" style="gap:12px">
-        <div><label>City</label><input id="f-city" placeholder="San Antonio" /></div>
-        <div><label>Commercial Only</label><select id="f-commercial"><option value="">All</option><option value="true">Yes</option><option value="false">No</option></select></div>
-        <div><label>Property Use</label><input id="f-use" placeholder="Use code or description" /></div>
-        <div><label>Owner Name</label><input id="f-owner" placeholder="(admin only)" /></div>
-        <div><label>Min Sq Ft</label><input id="f-min-sqft" type="number" placeholder="e.g. 5000" /></div>
-        <div><label>Max Sq Ft</label><input id="f-max-sqft" type="number" placeholder="e.g. 50000" /></div>
-        <div><label>Min Sq M</label><input id="f-min-sqm" type="number" placeholder="e.g. 464" /></div>
-        <div><label>Max Sq M</label><input id="f-max-sqm" type="number" placeholder="e.g. 4645" /></div>
-        <div><label>Min Land Acres</label><input id="f-min-acres" type="number" placeholder="e.g. 0.5" /></div>
-        <div><label>Max Land Acres</label><input id="f-max-acres" type="number" /></div>
-        <div><label>Min Market Value ($)</label><input id="f-min-val" type="number" /></div>
-        <div><label>Max Market Value ($)</label><input id="f-max-val" type="number" /></div>
-        <div><label>Document Type</label><input id="f-doctype" placeholder="Deed, Lien, etc." /></div>
-        <div><label>Recorded After</label><input id="f-after" type="date" /></div>
-        <div><label>Recorded Before</label><input id="f-before" type="date" /></div>
-        <div><label>Match Confidence</label>
-          <select id="f-confidence">
-            <option value="">Any</option>
-            <option value="exact_id">Exact ID</option>
-            <option value="exact_geographic">Exact Geo ID</option>
-            <option value="exact_legal">Exact Legal</option>
-            <option value="fuzzy_address">Fuzzy Address</option>
-            <option value="needs_review">Needs Review ⚠</option>
-            <option value="unmatched">Unmatched</option>
-          </select>
+      <button class="filter-toggle-btn" onclick="toggleFilters(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        Show Filters
+      </button>
+      <div class="filters-body collapsed" id="filters-body">
+        <div class="grid-4">
+          <div><label>City</label><input id="f-city" placeholder="San Antonio" /></div>
+          <div><label>Commercial</label>
+            <select id="f-commercial"><option value="">All</option><option value="true">Yes</option><option value="false">No</option></select>
+          </div>
+          <div><label>Property Use</label><input id="f-use" placeholder="Code or description" /></div>
+          <div><label>Owner Name</label><input id="f-owner" placeholder="Admin only" /></div>
+          <div><label>Min Sq Ft</label><input id="f-min-sqft" type="number" placeholder="e.g. 5000" /></div>
+          <div><label>Max Sq Ft</label><input id="f-max-sqft" type="number" /></div>
+          <div><label>Min Sq M</label><input id="f-min-sqm" type="number" placeholder="e.g. 464" /></div>
+          <div><label>Max Sq M</label><input id="f-max-sqm" type="number" /></div>
+          <div><label>Min Acres</label><input id="f-min-acres" type="number" placeholder="e.g. 0.5" /></div>
+          <div><label>Max Acres</label><input id="f-max-acres" type="number" /></div>
+          <div><label>Min Value ($)</label><input id="f-min-val" type="number" /></div>
+          <div><label>Max Value ($)</label><input id="f-max-val" type="number" /></div>
+          <div><label>Document Type</label><input id="f-doctype" placeholder="Deed, Lien…" /></div>
+          <div><label>Recorded After</label><input id="f-after" type="date" /></div>
+          <div><label>Recorded Before</label><input id="f-before" type="date" /></div>
+          <div><label>Match Confidence</label>
+            <select id="f-confidence">
+              <option value="">Any</option>
+              <option value="exact_id">Exact ID</option>
+              <option value="exact_geographic">Exact Geo ID</option>
+              <option value="exact_legal">Exact Legal</option>
+              <option value="fuzzy_address">Fuzzy Address</option>
+              <option value="needs_review">Needs Review</option>
+              <option value="unmatched">Unmatched</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div style="margin-top:12px;display:flex;gap:8px">
-        <button class="btn btn-primary" onclick="searchProperties()">Search</button>
-        <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="searchProperties()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Search
+          </button>
+          <button class="btn btn-secondary" onclick="clearFilters()">Clear</button>
+        </div>
       </div>
     </div>
 
     <div id="props-alert"></div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div id="props-count" style="font-size:13px;color:var(--gray-600)">—</div>
+        <div id="props-count" style="font-size:13px;font-weight:500;color:var(--gray-500)">—</div>
       </div>
       <div class="table-wrap">
         <table id="props-table">
           <thead>
             <tr>
-              <th>Property ID</th>
-              <th>Address</th>
-              <th>City</th>
-              <th>Use</th>
-              <th>Bldg Sq Ft</th>
-              <th>Bldg Sq M</th>
-              <th>Market Value</th>
-              <th>Call Status</th>
-              <th>OPR Match</th>
+              <th>Property ID</th><th>Address</th><th>City</th><th>Use</th>
+              <th>Bldg Sq Ft</th><th>Bldg Sq M</th><th>Market Value</th>
+              <th>Call Status</th><th>OPR Match</th>
             </tr>
           </thead>
           <tbody id="props-body">
-            <tr><td colspan="9" style="text-align:center;color:var(--gray-600);padding:24px">Run a search to see results.</td></tr>
+            <tr><td colspan="9">
+              <div class="empty">
+                <div class="empty-icon">&#x1F50D;</div>
+                <div class="empty-text">Run a search to see results</div>
+                <div class="empty-hint">Use the filters above to find properties</div>
+              </div>
+            </td></tr>
           </tbody>
         </table>
       </div>
@@ -308,17 +721,22 @@
     </div>
   </section>
 
-  <!-- ── Export ─────────────────────────────────────────────────────── -->
+  <!-- ── Export ──────────────────────────────────────────────────── -->
   <section id="export" class="section">
-    <div class="card" style="max-width:600px">
-      <div class="card-title">📥 Export Commercial Properties</div>
-      <p style="color:var(--gray-600);font-size:12px;margin-bottom:20px">
+    <div class="page-hd">
+      <div class="page-title">Export Data</div>
+      <div class="page-sub">Generate a filtered CSV of commercial properties</div>
+    </div>
+    <div class="card" style="max-width:680px">
+      <p style="font-size:13px;color:var(--gray-500);margin-bottom:20px;line-height:1.6">
         Exports apply the same filters as the Properties search. Leave blank to export all commercial properties.
-        The export runs asynchronously; you will receive a download link when it is ready.
+        The export runs asynchronously &mdash; you will receive a download link when it is ready.
       </p>
-      <div class="grid-2" style="gap:12px;margin-bottom:16px">
+      <div class="grid-2" style="gap:12px;margin-bottom:18px">
         <div><label>City</label><input id="e-city" placeholder="San Antonio" /></div>
-        <div><label>Commercial Only</label><select id="e-commercial"><option value="true">Yes</option><option value="">All</option></select></div>
+        <div><label>Commercial</label>
+          <select id="e-commercial"><option value="true">Yes</option><option value="">All</option></select>
+        </div>
         <div><label>Min Sq Ft</label><input id="e-min-sqft" type="number" /></div>
         <div><label>Max Sq Ft</label><input id="e-max-sqft" type="number" /></div>
         <div><label>Min Sq M</label><input id="e-min-sqm" type="number" /></div>
@@ -327,26 +745,60 @@
         <div><label>Match Confidence</label>
           <select id="e-confidence">
             <option value="">Any</option>
-            <option value="needs_review">Needs Review ⚠</option>
+            <option value="needs_review">Needs Review</option>
             <option value="exact_legal">Exact Legal</option>
             <option value="fuzzy_address">Fuzzy Address</option>
           </select>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="startExport()">Start Export</button>
+      <button class="btn btn-primary" onclick="startExport()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Start Export
+      </button>
       <div id="export-status" style="margin-top:16px"></div>
     </div>
   </section>
+
 </main>
 
-<!-- ── Property detail modal ──────────────────────────────────────── -->
+<!-- ── Property detail modal ───────────────────────────────────── -->
 <div class="modal-backdrop" id="detail-modal">
-  <div class="modal" style="min-width:600px;max-width:900px;max-height:90vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+  <div class="modal" style="max-width:780px">
+    <div class="modal-hd">
       <div class="modal-title" id="detail-title">Property Detail</div>
-      <button class="btn btn-secondary btn-sm" onclick="closeModal()">✕ Close</button>
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
     </div>
-    <div id="detail-body">Loading…</div>
+    <div id="detail-body">
+      <div style="text-align:center;padding:48px"><span class="spinner" style="width:24px;height:24px;border-width:3px"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Status modal ────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="status-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hd">
+      <div class="modal-title">Update Call Status</div>
+      <button class="modal-close" onclick="document.getElementById('status-modal').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div style="margin-bottom:14px">
+      <label>Status</label>
+      <select id="status-select">
+        <option>New</option><option>Contacted</option><option>Follow Up</option>
+        <option>Interested</option><option>Not Interested</option>
+        <option>Wrong Number</option><option>Do Not Contact</option>
+      </select>
+    </div>
+    <div>
+      <label>Note (optional)</label>
+      <textarea id="status-note" placeholder="Optional note for this status change"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('status-modal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitStatus()">Save Status</button>
+    </div>
   </div>
 </div>
 
@@ -361,14 +813,12 @@ let lastFilters = {};
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
   try {
-    // Dev-mode: use X-User-Email header if available; in production CF Access handles auth.
-    const resp = await apiFetch('/api/health');
+    await apiFetch('/api/health');
     document.getElementById('user-badge').textContent = 'Connected';
     setupUploadZones();
     loadJobs();
   } catch (e) {
     document.getElementById('user-badge').textContent = 'Offline';
-    showAlert('Could not reach API. Check that the worker is running.', 'error', 'user-badge');
   }
 })();
 
@@ -381,16 +831,17 @@ function showSection(id) {
   if (id === 'jobs') loadJobs();
 }
 
+function toggleFilters(btn) {
+  const body = document.getElementById('filters-body');
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? 'Show Filters' : 'Hide Filters';
+}
+
 // ── API helper ────────────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
   const resp = await fetch(path, {
     ...options,
-    headers: {
-      ...(options.headers || {}),
-      // Dev-mode: set your email here for local testing
-      // Remove this in production (Cloudflare Access provides auth)
-      // 'X-User-Email': 'your@email.com',
-    }
+    headers: { ...(options.headers || {}) }
   });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: resp.statusText }));
@@ -402,9 +853,9 @@ async function apiFetch(path, options = {}) {
 // ── Upload ────────────────────────────────────────────────────────────────────
 function setupUploadZones() {
   ['bcad', 'opr'].forEach(type => {
-    const zone = document.getElementById(`${type}-zone`);
+    const zone  = document.getElementById(`${type}-zone`);
     const input = document.getElementById(`${type}-file`);
-    const btn = document.getElementById(`${type}-upload-btn`);
+    const btn   = document.getElementById(`${type}-upload-btn`);
     const nameEl = document.getElementById(`${type}-file-name`);
 
     input.addEventListener('change', () => {
@@ -431,13 +882,13 @@ function setupUploadZones() {
 }
 
 async function uploadFile(type) {
-  const input = document.getElementById(`${type}-file`);
+  const input    = document.getElementById(`${type}-file`);
   const statusEl = document.getElementById(`${type}-status`);
-  const btn = document.getElementById(`${type}-upload-btn`);
+  const btn      = document.getElementById(`${type}-upload-btn`);
   if (!input.files[0]) return;
 
   btn.disabled = true;
-  statusEl.innerHTML = `<div class="alert alert-info"><span class="spinner"></span> Uploading…</div>`;
+  statusEl.innerHTML = `<div class="alert alert-info"><span class="spinner"></span> Uploading&hellip;</div>`;
 
   const formData = new FormData();
   formData.append('file', input.files[0]);
@@ -445,10 +896,10 @@ async function uploadFile(type) {
   try {
     const resp = await apiFetch(`/api/imports/${type}`, { method: 'POST', body: formData });
     const data = await resp.json();
-    statusEl.innerHTML = `<div class="alert alert-success">✓ Upload queued — Job ID: <strong>${data.jobId}</strong>. <a href="#" onclick="showSection('jobs');return false">View Jobs →</a></div>`;
+    statusEl.innerHTML = `<div class="alert alert-success">Upload queued &mdash; Job <strong>${data.jobId}</strong>. <a href="#" onclick="showSection('jobs');return false">View Jobs &rarr;</a></div>`;
     pollJob(data.jobId, statusEl);
   } catch (e) {
-    statusEl.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+    statusEl.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
     btn.disabled = false;
   }
 }
@@ -457,19 +908,19 @@ function pollJob(jobId, statusEl) {
   const interval = setInterval(async () => {
     try {
       const resp = await apiFetch(`/api/jobs/${jobId}`);
-      const job = await resp.json();
-      const pct = job.totalRecords > 0 ? Math.round(job.processedRecords / job.totalRecords * 100) : 0;
+      const job  = await resp.json();
+      const pct  = job.totalRecords > 0 ? Math.round(job.processedRecords / job.totalRecords * 100) : 0;
 
       if (job.status === 'completed') {
         clearInterval(interval);
-        statusEl.innerHTML = `<div class="alert alert-success">✓ Import complete — ${job.processedRecords} records imported.</div>`;
+        statusEl.innerHTML = `<div class="alert alert-success">Import complete &mdash; ${job.processedRecords.toLocaleString()} records imported.</div>`;
       } else if (job.status === 'failed') {
         clearInterval(interval);
-        statusEl.innerHTML = `<div class="alert alert-error">✗ Import failed: ${(job.errors[0] || 'Unknown error')}</div>`;
+        statusEl.innerHTML = `<div class="alert alert-error">&#x2715; Import failed: ${job.errors[0] || 'Unknown error'}</div>`;
       } else {
-        statusEl.innerHTML = `<div class="alert alert-info">
-          <span class="spinner"></span> Processing… ${job.processedRecords}/${job.totalRecords} (${pct}%)
-          <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${pct}%"></div></div>
+        statusEl.innerHTML = `<div class="alert alert-info" style="flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:8px"><span class="spinner"></span> Processing&hellip; ${job.processedRecords}/${job.totalRecords} (${pct}%)</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
         </div>`;
       }
     } catch { clearInterval(interval); }
@@ -479,65 +930,65 @@ function pollJob(jobId, statusEl) {
 // ── Jobs ──────────────────────────────────────────────────────────────────────
 async function loadJobs() {
   const el = document.getElementById('jobs-list');
-  el.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Loading…</div>';
+  el.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Loading&hellip;</div>';
   try {
     const resp = await apiFetch('/api/jobs');
     const data = await resp.json();
     if (!data.jobs.length) {
-      el.innerHTML = '<div class="alert alert-info">No jobs yet. Upload a file to get started.</div>';
+      el.innerHTML = `<div class="empty"><div class="empty-icon">&#x1F4CB;</div><div class="empty-text">No jobs yet</div><div class="empty-hint">Upload a file to get started</div></div>`;
       return;
     }
     el.innerHTML = `<div class="table-wrap"><table>
       <thead><tr><th>Job ID</th><th>Type</th><th>Status</th><th>Progress</th><th>Created</th><th>Action</th></tr></thead>
       <tbody>${data.jobs.map(j => `
         <tr>
-          <td><span style="font-family:monospace;font-size:11px">${j.jobId.slice(0,8)}…</span></td>
+          <td><span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-500)">${j.jobId.slice(0,8)}&hellip;</span></td>
           <td><span class="tag">${j.jobType.replace('_',' ')}</span></td>
           <td>${statusBadge(j.status)}</td>
-          <td>${j.totalRecords > 0 ? `${j.processedRecords}/${j.totalRecords}` : '—'}</td>
-          <td>${new Date(j.createdAt).toLocaleString()}</td>
-          <td>${j.downloadUrl ? `<a href="${j.downloadUrl}" class="btn btn-secondary btn-sm">⬇ Download</a>` : ''}</td>
+          <td style="color:var(--gray-600)">${j.totalRecords > 0 ? `${j.processedRecords.toLocaleString()} / ${j.totalRecords.toLocaleString()}` : '&mdash;'}</td>
+          <td style="color:var(--gray-500);font-size:12px">${new Date(j.createdAt).toLocaleString()}</td>
+          <td>${j.downloadUrl ? `<a href="${j.downloadUrl}" class="btn btn-secondary btn-sm">&#8595; Download</a>` : ''}</td>
         </tr>
       `).join('')}</tbody>
     </table></div>`;
   } catch (e) {
-    el.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+    el.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
   }
 }
 
 function statusBadge(status) {
-  const colors = { pending: 'badge-new', processing: 'badge-follow', completed: 'badge-contacted', failed: 'badge-not-interested' };
-  return `<span class="badge ${colors[status] || ''}">${status}</span>`;
+  const cls = { pending: 'badge-pending', processing: 'badge-processing', completed: 'badge-completed', failed: 'badge-failed' };
+  return `<span class="badge ${cls[status] || ''}">${status}</span>`;
 }
 
 // ── Properties ────────────────────────────────────────────────────────────────
 async function searchProperties(offset = 0) {
   propsOffset = offset;
-  const alert = document.getElementById('props-alert');
-  const body = document.getElementById('props-body');
-  const count = document.getElementById('props-count');
-  alert.innerHTML = '';
-  body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px"><span class="spinner"></span> Searching…</td></tr>';
+  const alertEl = document.getElementById('props-alert');
+  const body    = document.getElementById('props-body');
+  const count   = document.getElementById('props-count');
+  alertEl.innerHTML = '';
+  body.innerHTML = `<tr><td colspan="9"><div class="empty"><span class="spinner" style="width:22px;height:22px;border-width:3px"></span></div></td></tr>`;
 
   const params = new URLSearchParams();
   const val = id => document.getElementById(id).value;
-  if (val('f-city')) params.set('city', val('f-city'));
-  if (val('f-commercial')) params.set('commercial', val('f-commercial'));
-  if (val('f-use')) params.set('propertyUse', val('f-use'));
-  if (val('f-owner')) params.set('ownerName', val('f-owner'));
-  if (val('f-min-sqft')) params.set('minBuildingSqFt', val('f-min-sqft'));
-  if (val('f-max-sqft')) params.set('maxBuildingSqFt', val('f-max-sqft'));
-  if (val('f-min-sqm')) params.set('minBuildingSqM', val('f-min-sqm'));
-  if (val('f-max-sqm')) params.set('maxBuildingSqM', val('f-max-sqm'));
-  if (val('f-min-acres')) params.set('minLandAcres', val('f-min-acres'));
-  if (val('f-max-acres')) params.set('maxLandAcres', val('f-max-acres'));
-  if (val('f-min-val')) params.set('minMarketValue', val('f-min-val'));
-  if (val('f-max-val')) params.set('maxMarketValue', val('f-max-val'));
-  if (val('f-doctype')) params.set('documentType', val('f-doctype'));
-  if (val('f-after')) params.set('recordedAfter', val('f-after'));
-  if (val('f-before')) params.set('recordedBefore', val('f-before'));
+  if (val('f-city'))       params.set('city',           val('f-city'));
+  if (val('f-commercial')) params.set('commercial',     val('f-commercial'));
+  if (val('f-use'))        params.set('propertyUse',    val('f-use'));
+  if (val('f-owner'))      params.set('ownerName',      val('f-owner'));
+  if (val('f-min-sqft'))   params.set('minBuildingSqFt', val('f-min-sqft'));
+  if (val('f-max-sqft'))   params.set('maxBuildingSqFt', val('f-max-sqft'));
+  if (val('f-min-sqm'))    params.set('minBuildingSqM',  val('f-min-sqm'));
+  if (val('f-max-sqm'))    params.set('maxBuildingSqM',  val('f-max-sqm'));
+  if (val('f-min-acres'))  params.set('minLandAcres',   val('f-min-acres'));
+  if (val('f-max-acres'))  params.set('maxLandAcres',   val('f-max-acres'));
+  if (val('f-min-val'))    params.set('minMarketValue', val('f-min-val'));
+  if (val('f-max-val'))    params.set('maxMarketValue', val('f-max-val'));
+  if (val('f-doctype'))    params.set('documentType',   val('f-doctype'));
+  if (val('f-after'))      params.set('recordedAfter',  val('f-after'));
+  if (val('f-before'))     params.set('recordedBefore', val('f-before'));
   if (val('f-confidence')) params.set('matchConfidence', val('f-confidence'));
-  params.set('limit', propsLimit);
+  params.set('limit',  propsLimit);
   params.set('offset', offset);
   lastFilters = Object.fromEntries(params);
 
@@ -545,31 +996,31 @@ async function searchProperties(offset = 0) {
     const resp = await apiFetch(`/api/properties?${params}`);
     const data = await resp.json();
     propsTotal = data.total;
-    count.textContent = `${data.total} propert${data.total !== 1 ? 'ies' : 'y'} found`;
+    count.textContent = `${data.total.toLocaleString()} propert${data.total !== 1 ? 'ies' : 'y'} found`;
 
     if (!data.properties.length) {
-      body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-600)">No results matching your filters.</td></tr>';
+      body.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">&#x1F50D;</div><div class="empty-text">No results</div><div class="empty-hint">Try adjusting your filters</div></div></td></tr>`;
       renderPagination();
       return;
     }
 
     body.innerHTML = data.properties.map(p => `
       <tr onclick="loadDetail('${p.id}')">
-        <td><span style="font-family:monospace">${p.id}</span></td>
-        <td>${p.property_address || '—'}</td>
-        <td>${p.city || '—'}</td>
-        <td><span class="tag">${p.property_use_code || '—'}</span></td>
-        <td>${p.building_area_sq_ft ? p.building_area_sq_ft.toLocaleString() : '—'}</td>
-        <td>${p.building_area_sq_m ? p.building_area_sq_m.toLocaleString() : '—'}</td>
-        <td>${p.total_appraised_value ? '$' + p.total_appraised_value.toLocaleString() : '—'}</td>
-        <td>—</td>
-        <td>—</td>
+        <td><span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-600)">${p.id}</span></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.property_address || '&mdash;'}</td>
+        <td>${p.city || '&mdash;'}</td>
+        <td><span class="tag">${p.property_use_code || '&mdash;'}</span></td>
+        <td>${p.building_area_sq_ft ? p.building_area_sq_ft.toLocaleString() : '&mdash;'}</td>
+        <td>${p.building_area_sq_m  ? p.building_area_sq_m.toLocaleString()  : '&mdash;'}</td>
+        <td>${p.total_appraised_value ? '$' + p.total_appraised_value.toLocaleString() : '&mdash;'}</td>
+        <td>&mdash;</td>
+        <td>&mdash;</td>
       </tr>
     `).join('');
     renderPagination();
   } catch (e) {
     body.innerHTML = '<tr><td colspan="9"></td></tr>';
-    alert.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+    alertEl.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
   }
 }
 
@@ -583,14 +1034,14 @@ function clearFilters() {
 }
 
 function renderPagination() {
-  const el = document.getElementById('props-pagination');
+  const el    = document.getElementById('props-pagination');
   const pages = Math.ceil(propsTotal / propsLimit);
-  const cur = Math.floor(propsOffset / propsLimit) + 1;
+  const cur   = Math.floor(propsOffset / propsLimit) + 1;
   if (pages <= 1) { el.innerHTML = ''; return; }
   el.innerHTML = `
-    <button class="btn btn-secondary btn-sm" ${cur === 1 ? 'disabled' : ''} onclick="searchProperties(${(cur-2)*propsLimit})">← Prev</button>
+    <button class="btn btn-secondary btn-sm" ${cur === 1 ? 'disabled' : ''} onclick="searchProperties(${(cur-2)*propsLimit})">&larr; Prev</button>
     <span>Page ${cur} of ${pages}</span>
-    <button class="btn btn-secondary btn-sm" ${cur >= pages ? 'disabled' : ''} onclick="searchProperties(${cur*propsLimit})">Next →</button>
+    <button class="btn btn-secondary btn-sm" ${cur >= pages ? 'disabled' : ''} onclick="searchProperties(${cur*propsLimit})">Next &rarr;</button>
   `;
 }
 
@@ -598,14 +1049,14 @@ function renderPagination() {
 async function loadDetail(propertyId) {
   document.getElementById('detail-modal').classList.add('open');
   document.getElementById('detail-title').textContent = `Property: ${propertyId}`;
-  document.getElementById('detail-body').innerHTML = '<div style="text-align:center;padding:32px"><span class="spinner"></span></div>';
+  document.getElementById('detail-body').innerHTML = `<div style="text-align:center;padding:48px"><span class="spinner" style="width:24px;height:24px;border-width:3px"></span></div>`;
 
   try {
     const resp = await apiFetch(`/api/properties/${propertyId}`);
     const data = await resp.json();
     renderDetail(data);
   } catch (e) {
-    document.getElementById('detail-body').innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
+    document.getElementById('detail-body').innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
   }
 }
 
@@ -615,109 +1066,130 @@ function renderDetail(data) {
 
   let dncBanner = '';
   if (o && o.do_not_contact) {
-    dncBanner = `<div class="dnc-banner">🚫 DO NOT CONTACT — ${o.do_not_contact_source || 'Marked internally'}</div>`;
+    dncBanner = `<div class="dnc-banner">&#x1F6AB; DO NOT CONTACT &mdash; ${o.do_not_contact_source || 'Marked internally'}</div>`;
   }
 
-  const fmt = v => v !== null && v !== undefined ? v : '—';
-  const fmtMoney = v => v ? '$' + Number(v).toLocaleString() : '—';
-  const fmtSqFt = v => v ? Number(v).toLocaleString() + ' sq ft' : '—';
-  const fmtSqM = v => v ? Number(v).toLocaleString() + ' sq m' : '—';
+  const fmt      = v => (v !== null && v !== undefined && v !== '') ? v : '&mdash;';
+  const fmtMoney = v => v ? '$' + Number(v).toLocaleString() : '&mdash;';
+  const fmtSqFt  = v => v ? Number(v).toLocaleString() + ' sq ft' : '&mdash;';
+  const fmtSqM   = v => v ? Number(v).toLocaleString() + ' sq m'  : '&mdash;';
 
-  const callStatusColors = {
+  const statusColors = {
     'New': 'badge-new', 'Contacted': 'badge-contacted', 'Follow Up': 'badge-follow',
     'Interested': 'badge-interested', 'Not Interested': 'badge-not-interested',
     'Wrong Number': 'badge-new', 'Do Not Contact': 'badge-dnc'
   };
+  const confColors = {
+    exact_id: 'badge-exact', exact_geographic: 'badge-exact', exact_legal: 'badge-exact',
+    fuzzy_address: 'badge-fuzzy', needs_review: 'badge-review', unmatched: 'badge-unmatched'
+  };
 
-  const currentStatus = data.callStatus.current;
-  const statusBadgeHtml = currentStatus
-    ? `<span class="badge ${callStatusColors[currentStatus] || ''}">${currentStatus}</span>`
+  const currentStatus   = data.callStatus.current;
+  const currentBadge    = currentStatus
+    ? `<span class="badge ${statusColors[currentStatus] || ''}">${currentStatus}</span>`
     : `<span class="badge badge-unmatched">No Status</span>`;
-
-  const confidenceColor = { exact_id: 'badge-exact', exact_geographic: 'badge-exact', exact_legal: 'badge-exact',
-    fuzzy_address: 'badge-fuzzy', needs_review: 'badge-review', unmatched: 'badge-unmatched' };
 
   document.getElementById('detail-body').innerHTML = `
     ${dncBanner}
-
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
-      ${statusBadgeHtml}
-      <span style="font-size:12px;color:var(--gray-600)">Current Call Status</span>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+      ${currentBadge}
+      <span style="font-size:12px;color:var(--gray-400)">Current Call Status</span>
       <button class="btn btn-secondary btn-sm" onclick="openStatusModal('${p.id}')">Update Status</button>
     </div>
 
     <div class="grid-2">
       <div>
-        <div class="detail-section-title">Property</div>
-        <div class="detail-field"><div class="detail-label">Property ID</div><div class="detail-value" style="font-family:monospace">${fmt(p.id)}</div></div>
-        <div class="detail-field"><div class="detail-label">Geographic ID</div><div class="detail-value">${fmt(p.geographic_id)}</div></div>
-        <div class="detail-field"><div class="detail-label">Property Address</div><div class="detail-value">${fmt(p.property_address)}</div></div>
-        <div class="detail-field"><div class="detail-label">City / ZIP</div><div class="detail-value">${fmt(p.city)}, ${fmt(p.state)} ${fmt(p.zip_code)}</div></div>
-        <div class="detail-field"><div class="detail-label">Use Code</div><div class="detail-value">${fmt(p.property_use_code)} — ${fmt(p.property_use_description)}</div></div>
-        <div class="detail-field"><div class="detail-label">Commercial</div><div class="detail-value">${p.commercial ? '✓ Yes' : '✗ No'}</div></div>
-        <div class="detail-field"><div class="detail-label">Legal Description</div><div class="detail-value" style="font-size:12px">${fmt(p.legal_description)}</div></div>
+        <div class="section-rule">Property</div>
+        <div class="dl"><div class="dl-label">Property ID</div><div class="dl-value" style="font-family:ui-monospace,monospace;font-size:12px">${fmt(p.id)}</div></div>
+        <div class="dl"><div class="dl-label">Geographic ID</div><div class="dl-value">${fmt(p.geographic_id)}</div></div>
+        <div class="dl"><div class="dl-label">Property Address</div><div class="dl-value">${fmt(p.property_address)}</div></div>
+        <div class="dl"><div class="dl-label">City / ZIP</div><div class="dl-value">${fmt(p.city)}, ${fmt(p.state)} ${fmt(p.zip_code)}</div></div>
+        <div class="dl"><div class="dl-label">Use Code</div><div class="dl-value">${fmt(p.property_use_code)} &mdash; ${fmt(p.property_use_description)}</div></div>
+        <div class="dl"><div class="dl-label">Commercial</div><div class="dl-value">${p.commercial ? '&#x2713; Yes' : '&#x2715; No'}</div></div>
+        <div class="dl"><div class="dl-label">Legal Description</div><div class="dl-value" style="font-size:12px;color:var(--gray-600)">${fmt(p.legal_description)}</div></div>
       </div>
       <div>
-        <div class="detail-section-title">Size & Value</div>
-        <div class="detail-field"><div class="detail-label">Building Area</div><div class="detail-value">${fmtSqFt(p.building_area_sq_ft)} / ${fmtSqM(p.building_area_sq_m)}</div></div>
-        <div class="detail-field"><div class="detail-label">Land Area</div><div class="detail-value">${fmtSqFt(p.land_area_sq_ft)} / ${fmt(p.land_area_acres)} acres</div></div>
-        <div class="detail-field"><div class="detail-label">Improvement Value</div><div class="detail-value">${fmtMoney(p.improvement_value)}</div></div>
-        <div class="detail-field"><div class="detail-label">Land Value</div><div class="detail-value">${fmtMoney(p.land_value)}</div></div>
-        <div class="detail-field"><div class="detail-label">Total Appraised Value</div><div class="detail-value" style="font-weight:600">${fmtMoney(p.total_appraised_value)}</div></div>
-        <div class="detail-field"><div class="detail-label">Exemption Status</div><div class="detail-value">${fmt(p.exemption_status)}</div></div>
+        <div class="section-rule">Size &amp; Value</div>
+        <div class="dl"><div class="dl-label">Building Area</div><div class="dl-value">${fmtSqFt(p.building_area_sq_ft)} / ${fmtSqM(p.building_area_sq_m)}</div></div>
+        <div class="dl"><div class="dl-label">Land Area</div><div class="dl-value">${fmtSqFt(p.land_area_sq_ft)} / ${fmt(p.land_area_acres)} acres</div></div>
+        <div class="dl"><div class="dl-label">Improvement Value</div><div class="dl-value">${fmtMoney(p.improvement_value)}</div></div>
+        <div class="dl"><div class="dl-label">Land Value</div><div class="dl-value">${fmtMoney(p.land_value)}</div></div>
+        <div class="dl"><div class="dl-label">Total Appraised Value</div><div class="dl-value" style="font-size:16px;font-weight:700;color:var(--gray-900)">${fmtMoney(p.total_appraised_value)}</div></div>
+        <div class="dl"><div class="dl-label">Exemption Status</div><div class="dl-value">${fmt(p.exemption_status)}</div></div>
 
-        <div class="detail-section-title">Owner${o && !o.owner_name ? ' (PII restricted)' : ''}</div>
+        <div class="section-rule">Owner${o && !o.owner_name ? ' (PII restricted)' : ''}</div>
         ${o ? `
-          <div class="detail-field"><div class="detail-label">Owner Name</div><div class="detail-value">${fmt(o.owner_name)}</div></div>
-          <div class="detail-field"><div class="detail-label">Mailing Address</div><div class="detail-value">${fmt(o.mailing_address)}, ${fmt(o.mailing_city)}, ${fmt(o.mailing_state)} ${fmt(o.mailing_zip)}</div></div>
-        ` : '<div style="color:var(--gray-600);font-size:12px">Owner data not available.</div>'}
+          <div class="dl"><div class="dl-label">Owner Name</div><div class="dl-value">${fmt(o.owner_name)}</div></div>
+          <div class="dl"><div class="dl-label">Mailing Address</div><div class="dl-value">${fmt(o.mailing_address)}, ${fmt(o.mailing_city)}, ${fmt(o.mailing_state)} ${fmt(o.mailing_zip)}</div></div>
+        ` : '<div style="color:var(--gray-400);font-size:12px">Owner data not available.</div>'}
       </div>
     </div>
 
     ${data.improvements.length ? `
-      <div class="detail-section-title">Improvements (${data.improvements.length})</div>
-      <table style="width:100%;font-size:12px"><thead><tr><th>Type</th><th>Sq Ft</th><th>Sq M</th><th>Value</th></tr></thead>
-      <tbody>${data.improvements.map(i => `<tr><td>${i.building_type||'—'}</td><td>${i.building_area_sq_ft?.toLocaleString()||'—'}</td><td>${i.building_area_sq_m?.toLocaleString()||'—'}</td><td>${i.improvement_value?'$'+i.improvement_value.toLocaleString():'—'}</td></tr>`).join('')}</tbody></table>
-    ` : ''}
-
-    ${data.oprHistory.length ? `
-      <div class="detail-section-title">OPR History (${data.oprHistory.length})</div>
-      <div class="table-wrap"><table style="font-size:12px">
-        <thead><tr><th>Document #</th><th>Type</th><th>Recorded</th><th>Grantor</th><th>Grantee</th><th>Match</th></tr></thead>
-        <tbody>${data.oprHistory.map(o => `<tr>
-          <td style="font-family:monospace">${o.document_number}</td>
-          <td>${o.document_type||'—'}</td>
-          <td>${o.recording_date||'—'}</td>
-          <td>${o.grantor||'—'}</td>
-          <td>${o.grantee||'—'}</td>
-          <td><span class="badge ${confidenceColor[o.match_confidence]||''}">${o.match_confidence}</span></td>
+      <div class="section-rule">Improvements (${data.improvements.length})</div>
+      <div class="table-wrap"><table style="min-width:0">
+        <thead><tr><th>Type</th><th>Sq Ft</th><th>Sq M</th><th>Value</th></tr></thead>
+        <tbody>${data.improvements.map(i => `<tr>
+          <td>${i.building_type || '&mdash;'}</td>
+          <td>${i.building_area_sq_ft?.toLocaleString() || '&mdash;'}</td>
+          <td>${i.building_area_sq_m?.toLocaleString()  || '&mdash;'}</td>
+          <td>${i.improvement_value ? '$' + i.improvement_value.toLocaleString() : '&mdash;'}</td>
         </tr>`).join('')}</tbody>
       </table></div>
     ` : ''}
 
-    <div class="detail-section-title">Notes</div>
-    <div id="notes-list-${p.id}" style="margin-bottom:8px">
-      ${data.notes.length ? data.notes.map(n => `<div style="padding:6px 0;border-bottom:1px solid var(--gray-100);font-size:12px"><div style="color:var(--gray-600);font-size:11px">${new Date(n.created_at).toLocaleString()}</div>${n.note}</div>`).join('') : '<div style="color:var(--gray-600);font-size:12px">No notes yet.</div>'}
+    ${data.oprHistory.length ? `
+      <div class="section-rule">OPR History (${data.oprHistory.length})</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Document #</th><th>Type</th><th>Recorded</th><th>Grantor</th><th>Grantee</th><th>Match</th></tr></thead>
+        <tbody>${data.oprHistory.map(o => `<tr>
+          <td style="font-family:ui-monospace,monospace;font-size:11px">${o.document_number}</td>
+          <td>${o.document_type || '&mdash;'}</td>
+          <td style="white-space:nowrap">${o.recording_date || '&mdash;'}</td>
+          <td>${o.grantor || '&mdash;'}</td>
+          <td>${o.grantee || '&mdash;'}</td>
+          <td><span class="badge ${confColors[o.match_confidence] || ''}">${o.match_confidence}</span></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    ` : ''}
+
+    <div class="section-rule">Notes</div>
+    <div id="notes-list-${p.id}" style="margin-bottom:10px">
+      ${data.notes.length
+        ? data.notes.map(n => `
+          <div style="padding:8px 0;border-bottom:1px solid var(--gray-100)">
+            <div style="font-size:11px;color:var(--gray-400);margin-bottom:2px">${new Date(n.created_at).toLocaleString()}</div>
+            <div style="font-size:13px">${n.note}</div>
+          </div>`).join('')
+        : '<div style="color:var(--gray-400);font-size:13px">No notes yet.</div>'}
     </div>
-    <div style="display:flex;gap:8px">
-      <textarea id="note-input-${p.id}" placeholder="Add a note…" style="flex:1;min-height:60px"></textarea>
-      <button class="btn btn-secondary" style="align-self:flex-end" onclick="addNote('${p.id}')">Add Note</button>
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <textarea id="note-input-${p.id}" placeholder="Add a note&hellip;" style="flex:1;min-height:64px"></textarea>
+      <button class="btn btn-secondary btn-sm" style="align-self:flex-end;height:36px" onclick="addNote('${p.id}')">Add</button>
     </div>
 
-    <div class="detail-section-title">Call Status History</div>
+    <div class="section-rule">Call Status History</div>
     <div style="font-size:12px">
-      ${data.callStatus.history.length ? data.callStatus.history.map(s => `<div style="padding:4px 0;border-bottom:1px solid var(--gray-100)"><span class="badge ${callStatusColors[s.status]||''}">${s.status}</span> <span style="color:var(--gray-600)">${new Date(s.changed_at).toLocaleString()}</span>${s.note ? ` — ${s.note}` : ''}</div>`).join('') : '<div style="color:var(--gray-600)">No status history.</div>'}
+      ${data.callStatus.history.length
+        ? data.callStatus.history.map(s => `
+          <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--gray-100)">
+            <span class="badge ${statusColors[s.status] || ''}">${s.status}</span>
+            <span style="color:var(--gray-400)">${new Date(s.changed_at).toLocaleString()}</span>
+            ${s.note ? `<span style="color:var(--gray-600)">&mdash; ${s.note}</span>` : ''}
+          </div>`).join('')
+        : '<div style="color:var(--gray-400)">No status history.</div>'}
     </div>
 
-    <div style="margin-top:16px;font-size:11px;color:var(--gray-600)">
-      Data source: ${p.data_source||'—'} · Last updated: ${p.last_updated ? new Date(p.last_updated).toLocaleString() : '—'}
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--gray-100);font-size:11px;color:var(--gray-400)">
+      Data source: ${p.data_source || '&mdash;'} &middot;
+      Last updated: ${p.last_updated ? new Date(p.last_updated).toLocaleString() : '&mdash;'}
     </div>
   `;
 }
 
 async function addNote(propertyId) {
   const input = document.getElementById(`note-input-${propertyId}`);
-  const note = input.value.trim();
+  const note  = input.value.trim();
   if (!note) return;
   try {
     await apiFetch(`/api/properties/${propertyId}/notes`, {
@@ -740,99 +1212,10 @@ function openStatusModal(propertyId) {
   document.getElementById('status-modal').classList.add('open');
 }
 
-// ── Export ────────────────────────────────────────────────────────────────────
-async function startExport() {
-  const statusEl = document.getElementById('export-status');
-  statusEl.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Starting export…</div>';
-
-  const val = id => document.getElementById(id).value;
-  const filters = {};
-  if (val('e-city')) filters.city = val('e-city');
-  if (val('e-commercial')) filters.commercial = val('e-commercial');
-  if (val('e-min-sqft')) filters.minBuildingSqFt = val('e-min-sqft');
-  if (val('e-max-sqft')) filters.maxBuildingSqFt = val('e-max-sqft');
-  if (val('e-min-sqm')) filters.minBuildingSqM = val('e-min-sqm');
-  if (val('e-max-sqm')) filters.maxBuildingSqM = val('e-max-sqm');
-  if (val('e-use')) filters.propertyUse = val('e-use');
-  if (val('e-confidence')) filters.matchConfidence = val('e-confidence');
-
-  try {
-    const resp = await apiFetch('/api/exports/commercial-properties', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(filters)
-    });
-    const data = await resp.json();
-    statusEl.innerHTML = `<div class="alert alert-success">✓ Export queued — Job ${data.jobId}. Polling for completion…</div>`;
-    pollExport(data.jobId, statusEl);
-  } catch (e) {
-    statusEl.innerHTML = `<div class="alert alert-error">✗ ${e.message}</div>`;
-  }
-}
-
-function pollExport(jobId, statusEl) {
-  const interval = setInterval(async () => {
-    try {
-      const resp = await apiFetch(`/api/jobs/${jobId}`);
-      const job = await resp.json();
-      if (job.status === 'completed') {
-        clearInterval(interval);
-        statusEl.innerHTML = `<div class="alert alert-success">
-          ✓ Export ready — ${job.totalRecords} rows
-          <a href="${job.downloadUrl}" class="btn btn-primary btn-sm" style="margin-left:8px">⬇ Download CSV</a>
-        </div>`;
-      } else if (job.status === 'failed') {
-        clearInterval(interval);
-        statusEl.innerHTML = `<div class="alert alert-error">✗ Export failed: ${job.errors[0]||'Unknown error'}</div>`;
-      }
-    } catch { clearInterval(interval); }
-  }, 3000);
-}
-
-// ── Modal helpers ─────────────────────────────────────────────────────────────
-function closeModal() {
-  document.getElementById('detail-modal').classList.remove('open');
-}
-document.getElementById('detail-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-// Keyboard shortcut: Escape closes modal
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-</script>
-
-<!-- Status update modal -->
-<div class="modal-backdrop" id="status-modal">
-  <div class="modal" style="min-width:340px">
-    <div class="modal-title">Update Call Status</div>
-    <div style="margin-bottom:12px">
-      <label>Status</label>
-      <select id="status-select">
-        <option>New</option>
-        <option>Contacted</option>
-        <option>Follow Up</option>
-        <option>Interested</option>
-        <option>Not Interested</option>
-        <option>Wrong Number</option>
-        <option>Do Not Contact</option>
-      </select>
-    </div>
-    <div style="margin-bottom:12px">
-      <label>Note (optional)</label>
-      <textarea id="status-note" placeholder="Optional note for this status change"></textarea>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="document.getElementById('status-modal').classList.remove('open')">Cancel</button>
-      <button class="btn btn-primary" onclick="submitStatus()">Save Status</button>
-    </div>
-  </div>
-</div>
-
-<script>
 async function submitStatus() {
   if (!pendingStatusPropertyId) return;
   const status = document.getElementById('status-select').value;
-  const note = document.getElementById('status-note').value.trim();
+  const note   = document.getElementById('status-note').value.trim();
   try {
     await apiFetch(`/api/properties/${pendingStatusPropertyId}/call-status`, {
       method: 'POST',
@@ -845,6 +1228,67 @@ async function submitStatus() {
     alert('Failed to update status: ' + e.message);
   }
 }
+
+// ── Export ────────────────────────────────────────────────────────────────────
+async function startExport() {
+  const statusEl = document.getElementById('export-status');
+  statusEl.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Starting export&hellip;</div>';
+
+  const val = id => document.getElementById(id).value;
+  const filters = {};
+  if (val('e-city'))       filters.city             = val('e-city');
+  if (val('e-commercial')) filters.commercial       = val('e-commercial');
+  if (val('e-min-sqft'))   filters.minBuildingSqFt  = val('e-min-sqft');
+  if (val('e-max-sqft'))   filters.maxBuildingSqFt  = val('e-max-sqft');
+  if (val('e-min-sqm'))    filters.minBuildingSqM   = val('e-min-sqm');
+  if (val('e-max-sqm'))    filters.maxBuildingSqM   = val('e-max-sqm');
+  if (val('e-use'))        filters.propertyUse      = val('e-use');
+  if (val('e-confidence')) filters.matchConfidence  = val('e-confidence');
+
+  try {
+    const resp = await apiFetch('/api/exports/commercial-properties', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(filters)
+    });
+    const data = await resp.json();
+    statusEl.innerHTML = `<div class="alert alert-success">Export queued &mdash; Job ${data.jobId}. Polling for completion&hellip;</div>`;
+    pollExport(data.jobId, statusEl);
+  } catch (e) {
+    statusEl.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
+  }
+}
+
+function pollExport(jobId, statusEl) {
+  const interval = setInterval(async () => {
+    try {
+      const resp = await apiFetch(`/api/jobs/${jobId}`);
+      const job  = await resp.json();
+      if (job.status === 'completed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="alert alert-success" style="flex-wrap:wrap;gap:10px">
+          Export ready &mdash; ${job.totalRecords.toLocaleString()} rows
+          <a href="${job.downloadUrl}" class="btn btn-primary btn-sm">&#8595; Download CSV</a>
+        </div>`;
+      } else if (job.status === 'failed') {
+        clearInterval(interval);
+        statusEl.innerHTML = `<div class="alert alert-error">&#x2715; Export failed: ${job.errors[0] || 'Unknown error'}</div>`;
+      }
+    } catch { clearInterval(interval); }
+  }, 3000);
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+function closeModal() {
+  document.getElementById('detail-modal').classList.remove('open');
+}
+document.getElementById('detail-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('status-modal').addEventListener('click', function(e) {
+  if (e.target === this) document.getElementById('status-modal').classList.remove('open');
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>
 
 </body>
