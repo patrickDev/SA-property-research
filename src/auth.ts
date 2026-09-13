@@ -141,14 +141,18 @@ async function upsertUser(env: Env, id: string, email: string): Promise<AuthUser
     return { id: existing.id, email: existing.email, role: existing.role };
   }
 
-  // Create new user with default role 'viewer'
+  // First user ever gets admin; everyone else starts as viewer
+  const count = await env.DB.prepare("SELECT COUNT(*) AS n FROM users")
+    .first<{ n: number }>();
+  const role = (count?.n ?? 0) === 0 ? "admin" : "viewer";
+
   await env.DB.prepare(
-    "INSERT INTO users (id, email, role, created_at, last_login) VALUES (?, ?, 'viewer', ?, ?)"
+    "INSERT INTO users (id, email, role, created_at, last_login) VALUES (?, ?, ?, ?, ?)"
   )
-    .bind(id, email, now, now)
+    .bind(id, email, role, now, now)
     .run();
 
-  return { id, email, role: "viewer" };
+  return { id, email, role };
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────

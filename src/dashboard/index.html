@@ -810,16 +810,47 @@ const propsLimit = 25;
 let propsTotal = 0;
 let lastFilters = {};
 
+// ── Dev-mode email (X-User-Email for local wrangler dev) ──────────────────────
+function getDevEmail() { return localStorage.getItem('dev_email') || ''; }
+
+async function ensureDevAuth() {
+  // Try an authenticated endpoint; if 401, we're in dev mode and need an email
+  try {
+    await apiFetch('/api/jobs?limit=1');
+    return true;
+  } catch (e) {
+    if (!e.message.includes('401') && !e.message.includes('Unauthorized') && !e.message.includes('authentication')) return true;
+    // Prompt for dev email
+    let email = getDevEmail();
+    if (!email) {
+      email = window.prompt('Dev mode: enter your email address to log in:');
+      if (email) localStorage.setItem('dev_email', email);
+    }
+    if (!email) return false;
+    // Retry once with the email now stored
+    try { await apiFetch('/api/jobs?limit=1'); return true; } catch (_) { return false; }
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 (async () => {
   try {
     await apiFetch('/api/health');
-    document.getElementById('user-badge').textContent = 'Connected';
-    setupUploadZones();
-    loadJobs();
   } catch (e) {
     document.getElementById('user-badge').textContent = 'Offline';
+    return;
   }
+
+  const authed = await ensureDevAuth();
+  if (!authed) {
+    document.getElementById('user-badge').textContent = 'Not authenticated';
+    return;
+  }
+
+  const email = getDevEmail();
+  document.getElementById('user-badge').textContent = email || 'Connected';
+  setupUploadZones();
+  loadJobs();
 })();
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -839,10 +870,11 @@ function toggleFilters(btn) {
 
 // ── API helper ────────────────────────────────────────────────────────────────
 async function apiFetch(path, options = {}) {
-  const resp = await fetch(path, {
-    ...options,
-    headers: { ...(options.headers || {}) }
-  });
+  const headers = { ...(options.headers || {}) };
+  // In dev mode (no CF Access), authenticate via X-User-Email
+  const devEmail = getDevEmail();
+  if (devEmail) headers['X-User-Email'] = devEmail;
+  const resp = await fetch(path, { ...options, headers });
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: resp.statusText }));
     throw new Error(err.error || `HTTP ${resp.status}`);
