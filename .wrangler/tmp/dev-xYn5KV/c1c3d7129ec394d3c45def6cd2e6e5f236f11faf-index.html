@@ -1069,66 +1069,6 @@ function renderPagination() {
   `;
 }
 
-// ── OPR / Loan section renderer ───────────────────────────────────────────────
-function renderOprSection(oprHistory, confColors, fmtMoney) {
-  if (!oprHistory.length) return '';
-
-  const DOT_TYPES = ['deed of trust', 'mortgage', 'deed of trust (dot)'];
-  const isLoan = d => DOT_TYPES.some(t => (d.document_type || '').toLowerCase().includes(t));
-
-  const loans = oprHistory.filter(isLoan);
-  const totalLoanAmount = loans.reduce((sum, d) => sum + (d.loan_amount || 0), 0);
-  const lenders = [...new Set(loans.map(d => d.grantee).filter(Boolean))];
-
-  const loanSummary = loans.length ? `
-    <div style="background:var(--primary-light);border:1px solid var(--primary-border);border-radius:var(--radius);padding:16px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--primary);margin-bottom:10px">&#x1F3E6; Loan / Deed of Trust Summary</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
-        <div>
-          <div style="font-size:11px;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Active DOTs on File</div>
-          <div style="font-size:22px;font-weight:700;color:var(--primary)">${loans.length}</div>
-        </div>
-        ${totalLoanAmount ? `
-        <div>
-          <div style="font-size:11px;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Total Loan Amount</div>
-          <div style="font-size:22px;font-weight:700;color:var(--accent)">${fmtMoney(totalLoanAmount)}</div>
-        </div>` : ''}
-        <div>
-          <div style="font-size:11px;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Lender(s)</div>
-          <div style="font-size:13px;font-weight:600;color:var(--gray-800)">${lenders.length ? lenders.join('<br>') : '&mdash;'}</div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--gray-500);font-weight:600;text-transform:uppercase;letter-spacing:.05em">Most Recent Loan</div>
-          <div style="font-size:13px;font-weight:600;color:var(--gray-800)">${loans[0]?.recording_date || '&mdash;'}</div>
-        </div>
-      </div>
-    </div>` : '';
-
-  const docTypeLabel = d => {
-    const t = (d.document_type || '').toLowerCase();
-    if (t.includes('deed of trust') || t.includes('mortgage')) return `<span style="color:var(--accent);font-weight:600">${d.document_type}</span>`;
-    if (t.includes('release') || t.includes('payoff')) return `<span style="color:var(--success);font-weight:600">${d.document_type}</span>`;
-    if (t.includes('foreclosure') || t.includes('lis pendens')) return `<span style="color:var(--danger);font-weight:600">${d.document_type}</span>`;
-    return d.document_type || '&mdash;';
-  };
-
-  return `
-    <div class="section-rule">Public Records History (${oprHistory.length})</div>
-    ${loanSummary}
-    <div class="table-wrap"><table>
-      <thead><tr><th>Document #</th><th>Type</th><th>Recorded</th><th>Borrower / Grantor</th><th>Lender / Grantee</th><th>Loan Amount</th><th>Match</th></tr></thead>
-      <tbody>${oprHistory.map(d => `<tr>
-        <td style="font-family:ui-monospace,monospace;font-size:11px">${d.document_number}</td>
-        <td style="white-space:nowrap">${docTypeLabel(d)}</td>
-        <td style="white-space:nowrap">${d.recording_date || '&mdash;'}</td>
-        <td>${d.grantor || '&mdash;'}</td>
-        <td>${d.grantee || '&mdash;'}</td>
-        <td style="white-space:nowrap;font-weight:600">${d.loan_amount ? fmtMoney(d.loan_amount) : '&mdash;'}</td>
-        <td><span class="badge ${confColors[d.match_confidence] || ''}">${d.match_confidence}</span></td>
-      </tr>`).join('')}</tbody>
-    </table></div>`;
-}
-
 // ── Property detail ───────────────────────────────────────────────────────────
 async function loadDetail(propertyId) {
   document.getElementById('detail-modal').classList.add('open');
@@ -1205,25 +1145,6 @@ function renderDetail(data) {
         ${o ? `
           <div class="dl"><div class="dl-label">Owner Name</div><div class="dl-value">${fmt(o.owner_name)}</div></div>
           <div class="dl"><div class="dl-label">Mailing Address</div><div class="dl-value">${fmt(o.mailing_address)}, ${fmt(o.mailing_city)}, ${fmt(o.mailing_state)} ${fmt(o.mailing_zip)}</div></div>
-          <div class="dl">
-            <div class="dl-label">Phone</div>
-            <div class="dl-value" id="phone-display-${p.id}">
-              ${o.phone
-                ? `<span style="font-weight:600;color:var(--primary)">${o.phone}</span>`
-                : '<span style="color:var(--gray-400)">Not on file</span>'}
-              ${o.owner_name !== null ? `
-                <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="editPhone('${p.id}','${(o.phone||'').replace(/'/g,"\\'")}')">
-                  ${o.phone ? 'Edit' : '+ Add Phone'}
-                </button>` : ''}
-            </div>
-            <div id="phone-edit-${p.id}" style="display:none;margin-top:6px;display:none">
-              <div style="display:flex;gap:6px;align-items:center">
-                <input type="tel" id="phone-input-${p.id}" placeholder="e.g. (210) 555-1234" style="max-width:220px" />
-                <button class="btn btn-primary btn-sm" onclick="savePhone('${p.id}')">Save</button>
-                <button class="btn btn-secondary btn-sm" onclick="cancelPhone('${p.id}')">Cancel</button>
-              </div>
-            </div>
-          </div>
         ` : '<div style="color:var(--gray-400);font-size:12px">Owner data not available.</div>'}
       </div>
     </div>
@@ -1241,7 +1162,20 @@ function renderDetail(data) {
       </table></div>
     ` : ''}
 
-    ${renderOprSection(data.oprHistory, confColors, fmtMoney)}
+    ${data.oprHistory.length ? `
+      <div class="section-rule">OPR History (${data.oprHistory.length})</div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Document #</th><th>Type</th><th>Recorded</th><th>Grantor</th><th>Grantee</th><th>Match</th></tr></thead>
+        <tbody>${data.oprHistory.map(o => `<tr>
+          <td style="font-family:ui-monospace,monospace;font-size:11px">${o.document_number}</td>
+          <td>${o.document_type || '&mdash;'}</td>
+          <td style="white-space:nowrap">${o.recording_date || '&mdash;'}</td>
+          <td>${o.grantor || '&mdash;'}</td>
+          <td>${o.grantee || '&mdash;'}</td>
+          <td><span class="badge ${confColors[o.match_confidence] || ''}">${o.match_confidence}</span></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    ` : ''}
 
     <div class="section-rule">Notes</div>
     <div id="notes-list-${p.id}" style="margin-bottom:10px">
@@ -1275,31 +1209,6 @@ function renderDetail(data) {
       Last updated: ${p.last_updated ? new Date(p.last_updated).toLocaleString() : '&mdash;'}
     </div>
   `;
-}
-
-// ── Phone edit ────────────────────────────────────────────────────────────────
-function editPhone(propertyId, currentPhone) {
-  const editEl = document.getElementById(`phone-edit-${propertyId}`);
-  const input  = document.getElementById(`phone-input-${propertyId}`);
-  editEl.style.display = 'block';
-  input.value = currentPhone || '';
-  input.focus();
-}
-function cancelPhone(propertyId) {
-  document.getElementById(`phone-edit-${propertyId}`).style.display = 'none';
-}
-async function savePhone(propertyId) {
-  const phone = document.getElementById(`phone-input-${propertyId}`).value.trim();
-  try {
-    await apiFetch(`/api/properties/${propertyId}/phone`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone })
-    });
-    loadDetail(propertyId);
-  } catch (e) {
-    alert('Failed to save phone: ' + e.message);
-  }
 }
 
 async function addNote(propertyId) {

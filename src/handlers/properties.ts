@@ -22,7 +22,7 @@ import type {
   OprPropertyLinkRow,
   PropertySearchParams,
 } from "../types";
-import { canViewPii } from "../auth";
+import { canViewPii, requireAdmin } from "../auth";
 import { jsonOk, jsonError } from "../router";
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
@@ -37,6 +37,7 @@ function stripOwnerPii(owner: OwnerRow | null, viewPii: boolean) {
     mailing_city: viewPii ? owner.mailing_city : null,
     mailing_state: viewPii ? owner.mailing_state : null,
     mailing_zip: viewPii ? owner.mailing_zip : null,
+    phone: viewPii ? owner.phone : null,
     do_not_contact: owner.do_not_contact,
     do_not_contact_source: viewPii ? owner.do_not_contact_source : null,
     consent_or_basis_note: viewPii ? owner.consent_or_basis_note : null,
@@ -320,4 +321,54 @@ export async function handleGetProperty(
       history: statusResult.results ?? [],
     },
   });
+}
+
+// ─── POST /api/properties/:propertyId/phone ───────────────────────────────────
+
+export async function handleUpdateOwnerPhone(
+  request: Request,
+  env: Env,
+  _ctx: ExecutionContext,
+  params: Record<string, string>,
+  user: AuthUser
+): Promise<Response> {
+  const adminErr = requireAdmin(user);
+  if (adminErr) return adminErr;
+
+  const { propertyId } = params;
+  if (!propertyId) return jsonError("Missing propertyId", 400);
+
+  let body: { phone?: string };
+  try {
+    body = await request.json() as { phone?: string };
+  } catch {
+    return jsonError("Invalid JSON body", 400);
+  }
+
+  const phone = (body.phone ?? "").trim() || null;
+
+  const now = new Date().toISOString();
+
+  // Upsert: update if owner row exists, else create a minimal owner row
+  const existing = await env.DB.prepare(
+    "SELECT id FROM owners WHERE property_id = ? LIMIT 1"
+  )
+    .bind(propertyId)
+    .first<{ id: number }>();
+
+  if (existing) {
+    await env.DB.prepare(
+      "UPDATE owners SET phone = ?, last_updated = ? WHERE property_id = ?"
+    )
+      .bind(phone, now, propertyId)
+      .run();
+  } else {
+    await env.DB.prepare(
+      "INSERT INTO owners (property_id, phone, import_date, last_updated) VALUES (?,?,?,?)"
+    )
+      .bind(propertyId, phone, now, now)
+      .run();
+  }
+
+  return jsonOk({ phone });
 }

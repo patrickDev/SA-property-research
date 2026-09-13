@@ -110,6 +110,8 @@ export interface OwnerRow {
   mailing_city: string | null;
   mailing_state: string | null;
   mailing_zip: string | null;
+  /** Manually entered phone number (skip-traced or researched) */
+  phone: string | null;
   /** Outreach mode only: 0 or 1 */
   do_not_contact: number | null;
   do_not_contact_source: string | null;
@@ -138,6 +140,8 @@ export interface OprDocumentRow {
   document_type: string | null;
   grantor: string | null;
   grantee: string | null;
+  /** Loan/consideration amount for Deed of Trust documents */
+  loan_amount: number | null;
   legal_description: string | null;
   legal_description_normalized: string | null;
   property_address: string | null;
@@ -241,6 +245,7 @@ export interface OprCsvRow {
   documentType?: string;
   grantor?: string;
   grantee?: string;
+  loanAmount?: number;
   legalDescription?: string;
   propertyAddress?: string;
 }

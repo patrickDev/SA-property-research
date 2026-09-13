@@ -33,12 +33,16 @@ function mapOprRow(raw: Record<string, string>): OprCsvRow | null {
   const documentNumber = mapped["documentNumber"]?.trim();
   if (!documentNumber) return null;
 
+  const loanRaw = mapped["loanAmount"]?.replace(/[^0-9.]/g, "");
+  const loanAmount = loanRaw ? parseFloat(loanRaw) : undefined;
+
   return {
     documentNumber,
     recordingDate: mapped["recordingDate"] || undefined,
     documentType: mapped["documentType"] || undefined,
     grantor: mapped["grantor"] || undefined,
     grantee: mapped["grantee"] || undefined,
+    loanAmount: loanAmount && !isNaN(loanAmount) ? loanAmount : undefined,
     legalDescription: mapped["legalDescription"] || undefined,
     propertyAddress: mapped["propertyAddress"] || undefined,
   };
@@ -135,11 +139,11 @@ async function upsertOprRow(
   // Insert or ignore (deduplicate by document_number)
   const result = await env.DB.prepare(
     `INSERT INTO opr_documents
-       (document_number, recording_date, document_type, grantor, grantee,
+       (document_number, recording_date, document_type, grantor, grantee, loan_amount,
         legal_description, legal_description_normalized,
         property_address, property_address_normalized,
         data_source, source_file_hash, import_date)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(document_number) DO NOTHING`
   )
     .bind(
@@ -148,6 +152,7 @@ async function upsertOprRow(
       row.documentType ?? null,
       row.grantor ?? null,
       row.grantee ?? null,
+      row.loanAmount ?? null,
       row.legalDescription ?? null,
       legalNorm || null,
       row.propertyAddress ?? null,

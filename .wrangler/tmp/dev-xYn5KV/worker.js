@@ -998,10 +998,12 @@ async function upsertUser(env2, id, email) {
     await env2.DB.prepare("UPDATE users SET last_login = ? WHERE id = ?").bind(now, id).run();
     return { id: existing.id, email: existing.email, role: existing.role };
   }
+  const count3 = await env2.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
+  const role = (count3?.n ?? 0) === 0 ? "admin" : "viewer";
   await env2.DB.prepare(
-    "INSERT INTO users (id, email, role, created_at, last_login) VALUES (?, ?, 'viewer', ?, ?)"
-  ).bind(id, email, now, now).run();
-  return { id, email, role: "viewer" };
+    "INSERT INTO users (id, email, role, created_at, last_login) VALUES (?, ?, ?, ?, ?)"
+  ).bind(id, email, role, now, now).run();
+  return { id, email, role };
 }
 __name(upsertUser, "upsertUser");
 async function authenticate(request, env2) {
@@ -1245,8 +1247,7 @@ async function handleImport(request, env2, user, jobType) {
         errors, created_at, updated_at)
      VALUES (?, ?, 'pending', ?, ?, ?, 0, 0, 0, '[]', ?, ?)`
   ).bind(jobId, jobType, file.name, r2Key, fileHash, now, now).run();
-  const queue = jobType === "bcad_import" ? env2.IMPORT_QUEUE : env2.IMPORT_QUEUE;
-  await queue.send({
+  await env2.IMPORT_QUEUE.send({
     jobId,
     type: jobType,
     batchOffset: 0,
@@ -1339,6 +1340,7 @@ function stripOwnerPii(owner, viewPii) {
     mailing_city: viewPii ? owner.mailing_city : null,
     mailing_state: viewPii ? owner.mailing_state : null,
     mailing_zip: viewPii ? owner.mailing_zip : null,
+    phone: viewPii ? owner.phone : null,
     do_not_contact: owner.do_not_contact,
     do_not_contact_source: viewPii ? owner.do_not_contact_source : null,
     consent_or_basis_note: viewPii ? owner.consent_or_basis_note : null
@@ -1534,6 +1536,34 @@ async function handleGetProperty(_request, env2, _ctx, params, user) {
   });
 }
 __name(handleGetProperty, "handleGetProperty");
+async function handleUpdateOwnerPhone(request, env2, _ctx, params, user) {
+  const adminErr = requireAdmin(user);
+  if (adminErr) return adminErr;
+  const { propertyId } = params;
+  if (!propertyId) return jsonError("Missing propertyId", 400);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError("Invalid JSON body", 400);
+  }
+  const phone = (body.phone ?? "").trim() || null;
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const existing = await env2.DB.prepare(
+    "SELECT id FROM owners WHERE property_id = ? LIMIT 1"
+  ).bind(propertyId).first();
+  if (existing) {
+    await env2.DB.prepare(
+      "UPDATE owners SET phone = ?, last_updated = ? WHERE property_id = ?"
+    ).bind(phone, now, propertyId).run();
+  } else {
+    await env2.DB.prepare(
+      "INSERT INTO owners (property_id, phone, import_date, last_updated) VALUES (?,?,?,?)"
+    ).bind(propertyId, phone, now, now).run();
+  }
+  return jsonOk({ phone });
+}
+__name(handleUpdateOwnerPhone, "handleUpdateOwnerPhone");
 
 // src/handlers/exports.ts
 async function handleCreateExport(request, env2, _ctx, _params, user) {
@@ -1835,6 +1865,13 @@ var OPR_COLUMN_ALIASES = {
   grantors: "grantor",
   grantee: "grantee",
   grantees: "grantee",
+  consideration: "loanAmount",
+  "consideration amount": "loanAmount",
+  "loan amount": "loanAmount",
+  amount: "loanAmount",
+  "consideration/amount": "loanAmount",
+  "mortgage amount": "loanAmount",
+  "deed amount": "loanAmount",
   "legal description": "legalDescription",
   legal: "legalDescription",
   "property address": "propertyAddress",
@@ -2111,6 +2148,7 @@ async function processBcadImport(env2, job) {
   await env2.DB.prepare(
     "UPDATE import_jobs SET status='processing', total_records=?, updated_at=? WHERE id=?"
   ).bind(rows.length, now, job.id).run();
+  const clearedImprovements = /* @__PURE__ */ new Set();
   const BATCH = 50;
   for (let i = 0; i < rows.length; i += BATCH) {
     const chunk = rows.slice(i, i + BATCH);
@@ -2122,7 +2160,7 @@ async function processBcadImport(env2, job) {
         continue;
       }
       try {
-        await upsertBcadRow(env2, row, dataSource, fileHash, now);
+        await upsertBcadRow(env2, row, dataSource, fileHash, now, clearedImprovements);
         processed++;
       } catch (err) {
         failed++;
@@ -2154,7 +2192,7 @@ async function processBcadImport(env2, job) {
   ).run();
 }
 __name(processBcadImport, "processBcadImport");
-async function upsertBcadRow(env2, row, dataSource, fileHash, now) {
+async function upsertBcadRow(env2, row, dataSource, fileHash, now, clearedImprovements) {
   const { normalized: addrNorm } = normalizeAddress(row.propertyAddress);
   const legalNorm = normalizeLegalDescription(row.legalDescription);
   const hasBuildingArea = row.buildingAreaSqFt !== void 0 && row.buildingAreaSqFt > 0;
@@ -2220,20 +2258,16 @@ async function upsertBcadRow(env2, row, dataSource, fileHash, now) {
     now
   ).run();
   await env2.DB.prepare(
-    `INSERT INTO owners
-       (property_id, owner_name, mailing_address, mailing_city,
-        mailing_state, mailing_zip, data_source, import_date, last_updated)
-     VALUES (?,?,?,?,?,?,?,?,?)
-     ON CONFLICT(rowid) DO NOTHING`
-  );
-  await env2.DB.prepare(
     "DELETE FROM owners WHERE property_id = ?"
   ).bind(row.propertyId).run();
+  const existingOwner = await env2.DB.prepare(
+    "SELECT phone FROM owners WHERE property_id = ? LIMIT 1"
+  ).bind(row.propertyId).first();
   await env2.DB.prepare(
     `INSERT INTO owners
        (property_id, owner_name, mailing_address, mailing_city,
-        mailing_state, mailing_zip, data_source, import_date, last_updated)
-     VALUES (?,?,?,?,?,?,?,?,?)`
+        mailing_state, mailing_zip, phone, data_source, import_date, last_updated)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`
   ).bind(
     row.propertyId,
     row.ownerName ?? null,
@@ -2241,13 +2275,17 @@ async function upsertBcadRow(env2, row, dataSource, fileHash, now) {
     row.ownerMailingCity ?? null,
     row.ownerMailingState ?? null,
     row.ownerMailingZip ?? null,
+    existingOwner?.phone ?? null,
     dataSource,
     now,
     now
   ).run();
-  await env2.DB.prepare(
-    "DELETE FROM property_improvements WHERE property_id = ?"
-  ).bind(row.propertyId).run();
+  if (!clearedImprovements.has(row.propertyId)) {
+    await env2.DB.prepare(
+      "DELETE FROM property_improvements WHERE property_id = ?"
+    ).bind(row.propertyId).run();
+    clearedImprovements.add(row.propertyId);
+  }
   if (hasBuildingArea) {
     await env2.DB.prepare(
       `INSERT INTO property_improvements
@@ -2328,12 +2366,15 @@ function mapOprRow(raw) {
   }
   const documentNumber = mapped["documentNumber"]?.trim();
   if (!documentNumber) return null;
+  const loanRaw = mapped["loanAmount"]?.replace(/[^0-9.]/g, "");
+  const loanAmount = loanRaw ? parseFloat(loanRaw) : void 0;
   return {
     documentNumber,
     recordingDate: mapped["recordingDate"] || void 0,
     documentType: mapped["documentType"] || void 0,
     grantor: mapped["grantor"] || void 0,
     grantee: mapped["grantee"] || void 0,
+    loanAmount: loanAmount && !isNaN(loanAmount) ? loanAmount : void 0,
     legalDescription: mapped["legalDescription"] || void 0,
     propertyAddress: mapped["propertyAddress"] || void 0
   };
@@ -2402,11 +2443,11 @@ async function upsertOprRow(env2, row, dataSource, fileHash, now) {
   const legalNorm = normalizeLegalDescription(row.legalDescription);
   const result = await env2.DB.prepare(
     `INSERT INTO opr_documents
-       (document_number, recording_date, document_type, grantor, grantee,
+       (document_number, recording_date, document_type, grantor, grantee, loan_amount,
         legal_description, legal_description_normalized,
         property_address, property_address_normalized,
         data_source, source_file_hash, import_date)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(document_number) DO NOTHING`
   ).bind(
     row.documentNumber,
@@ -2414,6 +2455,7 @@ async function upsertOprRow(env2, row, dataSource, fileHash, now) {
     row.documentType ?? null,
     row.grantor ?? null,
     row.grantee ?? null,
+    row.loanAmount ?? null,
     row.legalDescription ?? null,
     legalNorm || null,
     row.propertyAddress ?? null,
@@ -2737,7 +2779,7 @@ async function cleanupFiles(env2, prefix, retentionDays) {
 __name(cleanupFiles, "cleanupFiles");
 
 // src/dashboard/index.ts
-import dashboardHtml from "./cc3d38ce7be01554f2e793a8b2fb6cea0eb9342e-index.html";
+import dashboardHtml from "./728c32ba93bdb9be0c88930fc9c41ed93647f7b7-index.html";
 var DASHBOARD_HTML = dashboardHtml;
 
 // src/worker.ts
@@ -2752,6 +2794,7 @@ router.get("/api/properties", handleSearchProperties);
 router.get("/api/properties/:propertyId", handleGetProperty);
 router.post("/api/properties/:propertyId/notes", handleAddNote);
 router.post("/api/properties/:propertyId/call-status", handleAddCallStatus);
+router.post("/api/properties/:propertyId/phone", handleUpdateOwnerPhone);
 router.post("/api/exports/commercial-properties", handleCreateExport);
 async function handleFetch(request, env2, ctx) {
   const url = new URL(request.url);
@@ -2847,7 +2890,7 @@ var jsonError2 = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCt
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError2;
 
-// .wrangler/tmp/bundle-FClpfH/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-9AyuiH/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -2879,7 +2922,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-FClpfH/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-9AyuiH/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

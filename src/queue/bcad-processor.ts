@@ -268,11 +268,18 @@ async function upsertBcadRow(
     .bind(row.propertyId)
     .run();
 
+  // Preserve existing phone if one was manually entered
+  const existingOwner = await env.DB.prepare(
+    "SELECT phone FROM owners WHERE property_id = ? LIMIT 1"
+  )
+    .bind(row.propertyId)
+    .first<{ phone: string | null }>();
+
   await env.DB.prepare(
     `INSERT INTO owners
        (property_id, owner_name, mailing_address, mailing_city,
-        mailing_state, mailing_zip, data_source, import_date, last_updated)
-     VALUES (?,?,?,?,?,?,?,?,?)`
+        mailing_state, mailing_zip, phone, data_source, import_date, last_updated)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`
   )
     .bind(
       row.propertyId,
@@ -281,6 +288,7 @@ async function upsertBcadRow(
       row.ownerMailingCity ?? null,
       row.ownerMailingState ?? null,
       row.ownerMailingZip ?? null,
+      existingOwner?.phone ?? null,
       dataSource,
       now,
       now

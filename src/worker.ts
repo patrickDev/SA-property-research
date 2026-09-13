@@ -16,6 +16,7 @@ import { handleGetJob, handleListJobs, handleDownloadJob } from "./handlers/jobs
 import {
   handleSearchProperties,
   handleGetProperty,
+  handleUpdateOwnerPhone,
 } from "./handlers/properties";
 import { handleCreateExport } from "./handlers/exports";
 import { handleAddNote, handleAddCallStatus } from "./handlers/notes";
@@ -46,6 +47,7 @@ router.get("/api/properties/:propertyId", handleGetProperty);
 // Notes & call status
 router.post("/api/properties/:propertyId/notes", handleAddNote);
 router.post("/api/properties/:propertyId/call-status", handleAddCallStatus);
+router.post("/api/properties/:propertyId/phone", handleUpdateOwnerPhone);
 
 // Exports (admin only, enforced inside handler)
 router.post("/api/exports/commercial-properties", handleCreateExport);
