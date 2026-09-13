@@ -1,0 +1,16 @@
+{
+  "name": "texas-property-search-scrapers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright scrapers for Texas county public records",
+  "scripts": {
+    "harris":  "node scrapers/harris-county.js",
+    "dallas":  "node scrapers/publicsearch-county.js dallas",
+    "denton":  "node scrapers/publicsearch-county.js denton",
+    "bexar":   "node scrapers/publicsearch-county.js bexar"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "playwright": "^1.48.0"
+  }
+}

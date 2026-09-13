@@ -1,0 +1,111 @@
+name: Scrape Texas County Records
+
+on:
+  # Run nightly at 2 AM CT (8 AM UTC)
+  schedule:
+    - cron: '0 8 * * *'
+
+  # Also allow manual trigger with county override
+  workflow_dispatch:
+    inputs:
+      county:
+        description: 'County to scrape (harris | dallas | denton | all)'
+        required: false
+        default: 'all'
+
+jobs:
+  harris:
+    name: Harris County (APP docs — last month)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'schedule' ||
+      github.event.inputs.county == 'all' ||
+      github.event.inputs.county == 'harris'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package.json
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: scripts
+        run: npx playwright install chromium --with-deps
+
+      - name: Scrape Harris County
+        working-directory: scripts
+        env:
+          WORKER_URL:   ${{ secrets.WORKER_URL }}
+          WORKER_EMAIL: ${{ secrets.WORKER_EMAIL }}
+        run: node scrapers/harris-county.js
+
+  dallas:
+    name: Dallas County (PublicSearch.us)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'schedule' ||
+      github.event.inputs.county == 'all' ||
+      github.event.inputs.county == 'dallas'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package.json
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: scripts
+        run: npx playwright install chromium --with-deps
+
+      - name: Scrape Dallas County
+        working-directory: scripts
+        env:
+          WORKER_URL:   ${{ secrets.WORKER_URL }}
+          WORKER_EMAIL: ${{ secrets.WORKER_EMAIL }}
+        run: node scrapers/publicsearch-county.js dallas
+
+  denton:
+    name: Denton County (PublicSearch.us)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'schedule' ||
+      github.event.inputs.county == 'all' ||
+      github.event.inputs.county == 'denton'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: scripts/package.json
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: scripts
+        run: npx playwright install chromium --with-deps
+
+      - name: Scrape Denton County
+        working-directory: scripts
+        env:
+          WORKER_URL:   ${{ secrets.WORKER_URL }}
+          WORKER_EMAIL: ${{ secrets.WORKER_EMAIL }}
+        run: node scrapers/publicsearch-county.js denton
