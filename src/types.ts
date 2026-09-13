@@ -11,6 +11,8 @@ export interface Env {
   RETENTION_DAYS_SOURCE_FILES: string;
   /** Days to retain generated export CSVs in R2 (default: 7) */
   RETENTION_DAYS_GENERATED_CSV: string;
+  /** Cloudflare Browser Rendering — used by county scrapers */
+  BROWSER: Fetcher;
   /** Cloudflare Access audience tag (set via wrangler secret) */
   CF_ACCESS_AUDIENCE?: string;
   /** Cloudflare Access team domain, e.g. "myteam.cloudflareaccess.com" */

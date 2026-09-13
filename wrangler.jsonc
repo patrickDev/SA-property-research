@@ -59,9 +59,16 @@
     ]
   },
 
-  // Cron trigger for daily retention cleanup (2:00 AM UTC)
+  // Browser Rendering — used by county scrapers
+  "browser": {
+    "binding": "BROWSER"
+  },
+
+  // Cron triggers:
+  //   0 2 * * *   — daily 2 AM UTC: retention cleanup
+  //   0 8 1 * *   — 1st of month 8 AM UTC (2 AM CT): county record scraping
   "triggers": {
-    "crons": ["0 2 * * *"]
+    "crons": ["0 2 * * *", "0 8 1 * *"]
   },
 
   // Default environment variables (override with wrangler secret or .dev.vars)

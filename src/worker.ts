@@ -23,6 +23,7 @@ import { handleCreateExport } from "./handlers/exports";
 import { handleAddNote, handleAddCallStatus } from "./handlers/notes";
 import { handleQueue } from "./queue/consumer";
 import { handleRetention } from "./queue/retention-processor";
+import { runScrapers } from "./scrapers/index";
 import { DASHBOARD_HTML } from "./dashboard";
 
 // ─── Router setup ─────────────────────────────────────────────────────────────
@@ -116,8 +117,22 @@ function addCorsHeaders(response: Response): Response {
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
+async function handleScheduled(
+  controller: ScheduledController,
+  env: Env,
+  ctx: ExecutionContext
+): Promise<void> {
+  if (controller.cron === "0 8 1 * *") {
+    // 1st of month at 8 AM UTC — run county scrapers
+    ctx.waitUntil(runScrapers(env));
+  } else {
+    // Default daily cron (0 2 * * *) — retention cleanup
+    await handleRetention(controller, env, ctx);
+  }
+}
+
 export default {
   fetch: handleFetch,
   queue: handleQueue,
-  scheduled: handleRetention,
+  scheduled: handleScheduled,
 } satisfies ExportedHandler<Env, QueueMessage>;
