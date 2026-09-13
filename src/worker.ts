@@ -1,5 +1,5 @@
 /**
- * Bexar County / San Antonio Commercial-Property Research
+ * Texas Property Search
  * Cloudflare Worker — main entry point
  *
  * Handles:
