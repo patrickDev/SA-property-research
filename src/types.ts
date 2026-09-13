@@ -74,6 +74,7 @@ export const CALL_STATUS_VALUES: CallStatusValue[] = [
 
 export interface PropertyRow {
   id: string;
+  county: string;
   geographic_id: string | null;
   property_address: string | null;
   property_address_normalized: string | null;
@@ -135,6 +136,7 @@ export interface ImprovementRow {
 
 export interface OprDocumentRow {
   id: number;
+  county: string;
   document_number: string;
   recording_date: string | null;
   document_type: string | null;
@@ -164,6 +166,7 @@ export type JobType = "bcad_import" | "opr_import" | "csv_export";
 
 export interface ImportJobRow {
   id: string;
+  county: string;
   job_type: JobType;
   status: JobStatus;
   source_file_name: string | null;
@@ -266,6 +269,7 @@ export interface JobResponse {
 }
 
 export interface PropertySearchParams {
+  county?: string;
   city?: string;
   commercial?: boolean;
   propertyUse?: string;

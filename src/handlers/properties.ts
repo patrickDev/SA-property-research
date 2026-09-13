@@ -51,6 +51,7 @@ function parseSearchParams(url: URL): PropertySearchParams {
     return v !== null && v !== "" ? parseFloat(v) : undefined;
   };
   return {
+    county: p.get("county") ?? undefined,
     city: p.get("city") ?? undefined,
     commercial: p.has("commercial")
       ? p.get("commercial") === "true" || p.get("commercial") === "1"
@@ -109,6 +110,10 @@ export async function handleSearchProperties(
   const conditions: string[] = [];
   const bindings: (string | number | boolean)[] = [];
 
+  if (search.county) {
+    conditions.push("UPPER(p.county) = UPPER(?)");
+    bindings.push(search.county);
+  }
   if (search.city) {
     conditions.push("UPPER(p.city) = UPPER(?)");
     bindings.push(search.city);

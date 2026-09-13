@@ -39,6 +39,9 @@ async function handleImport(
     return jsonError("Request must be multipart/form-data", 400);
   }
 
+  const countyRaw = formData.get("county");
+  const county = (typeof countyRaw === "string" ? countyRaw.trim() : "") || "Bexar";
+
   const fileEntry = formData.get("file");
   // Workers FormData returns File objects for file fields; string for text fields.
   if (!fileEntry || typeof fileEntry === "string") {
@@ -97,12 +100,12 @@ async function handleImport(
 
   await env.DB.prepare(
     `INSERT INTO import_jobs
-       (id, job_type, status, source_file_name, source_file_r2_key,
+       (id, county, job_type, status, source_file_name, source_file_r2_key,
         source_file_hash, total_records, processed_records, failed_records,
         errors, created_at, updated_at)
-     VALUES (?, ?, 'pending', ?, ?, ?, 0, 0, 0, '[]', ?, ?)`
+     VALUES (?, ?, ?, 'pending', ?, ?, ?, 0, 0, 0, '[]', ?, ?)`
   )
-    .bind(jobId, jobType, file.name, r2Key, fileHash, now, now)
+    .bind(jobId, county, jobType, file.name, r2Key, fileHash, now, now)
     .run();
 
   // Enqueue processing

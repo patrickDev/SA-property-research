@@ -64,7 +64,7 @@ export async function handleDownloadJob(
   const object = await env.FILES_BUCKET.get(row.result_r2_key);
   if (!object) return jsonError("File not found in storage", 404);
 
-  const filename = `bexar-export-${jobId}.csv`;
+  const filename = `texas-property-export-${jobId}.csv`;
   return new Response(object.body, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",

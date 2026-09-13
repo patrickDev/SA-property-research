@@ -120,6 +120,8 @@ export async function processBcadImport(
   const clearedImprovements = new Set<string>();
 
   // Process in batches of 50 (D1 batch limit is 100 statements)
+  const county = job.county || "Bexar";
+
   const BATCH = 50;
   for (let i = 0; i < rows.length; i += BATCH) {
     const chunk = rows.slice(i, i + BATCH);
@@ -133,7 +135,7 @@ export async function processBcadImport(
       }
 
       try {
-        await upsertBcadRow(env, row, dataSource, fileHash, now, clearedImprovements);
+        await upsertBcadRow(env, row, county, dataSource, fileHash, now, clearedImprovements);
         processed++;
       } catch (err) {
         failed++;
@@ -175,6 +177,7 @@ export async function processBcadImport(
 async function upsertBcadRow(
   env: Env,
   row: BcadCsvRow,
+  county: string,
   dataSource: string,
   fileHash: string,
   now: string,
@@ -203,15 +206,16 @@ async function upsertBcadRow(
   // Upsert property
   await env.DB.prepare(
     `INSERT INTO properties
-       (id, geographic_id, property_address, property_address_normalized,
+       (id, county, geographic_id, property_address, property_address_normalized,
         city, zip_code, legal_description, legal_description_normalized,
         property_use_code, property_use_description, commercial,
         improvement_value, land_value, total_appraised_value,
         land_area_sq_ft, land_area_acres,
         building_area_sq_ft, building_area_sq_m,
         exemption_status, data_source, source_file_hash, import_date, last_updated)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(id) DO UPDATE SET
+       county                     = excluded.county,
        geographic_id              = excluded.geographic_id,
        property_address           = excluded.property_address,
        property_address_normalized= excluded.property_address_normalized,
@@ -236,6 +240,7 @@ async function upsertBcadRow(
   )
     .bind(
       row.propertyId,
+      county,
       row.geographicId ?? null,
       row.propertyAddress ?? null,
       addrNorm || null,

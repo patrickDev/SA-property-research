@@ -18,6 +18,7 @@ import {
   handleGetProperty,
   handleUpdateOwnerPhone,
 } from "./handlers/properties";
+import { handleListCounties, handleAddCounty, handleDeleteCounty } from "./handlers/counties";
 import { handleCreateExport } from "./handlers/exports";
 import { handleAddNote, handleAddCallStatus } from "./handlers/notes";
 import { handleQueue } from "./queue/consumer";
@@ -30,6 +31,11 @@ const router = new Router();
 
 // Health check (unauthenticated)
 router.get("/api/health", (req, env) => handleHealth(req, env), true);
+
+// Counties
+router.get("/api/counties", handleListCounties);
+router.post("/api/counties", handleAddCounty);
+router.delete("/api/counties/:county", handleDeleteCounty);
 
 // Imports (admin only, enforced inside handler)
 router.post("/api/imports/bcad", handleBcadImport);

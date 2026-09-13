@@ -76,6 +76,8 @@ export async function processOprImport(
     .bind(rows.length, now, job.id)
     .run();
 
+  const county = job.county || "Bexar";
+
   const BATCH = 50;
   for (let i = 0; i < rows.length; i += BATCH) {
     const chunk = rows.slice(i, i + BATCH);
@@ -89,7 +91,7 @@ export async function processOprImport(
       }
 
       try {
-        await upsertOprRow(env, row, dataSource, fileHash, now);
+        await upsertOprRow(env, row, county, dataSource, fileHash, now);
         processed++;
       } catch (err) {
         failed++;
@@ -129,6 +131,7 @@ export async function processOprImport(
 async function upsertOprRow(
   env: Env,
   row: OprCsvRow,
+  county: string,
   dataSource: string,
   fileHash: string,
   now: string
@@ -139,14 +142,15 @@ async function upsertOprRow(
   // Insert or ignore (deduplicate by document_number)
   const result = await env.DB.prepare(
     `INSERT INTO opr_documents
-       (document_number, recording_date, document_type, grantor, grantee, loan_amount,
+       (county, document_number, recording_date, document_type, grantor, grantee, loan_amount,
         legal_description, legal_description_normalized,
         property_address, property_address_normalized,
         data_source, source_file_hash, import_date)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON CONFLICT(document_number) DO NOTHING`
   )
     .bind(
+      county,
       row.documentNumber,
       row.recordingDate ?? null,
       row.documentType ?? null,
