@@ -681,9 +681,13 @@
           <label>County</label>
           <select id="opr-county" style="width:100%"></select>
         </div>
-        <p style="font-size:12px;color:var(--gray-500);margin-bottom:16px">
+        <p style="font-size:12px;color:var(--gray-500);margin-bottom:10px">
           Upload Official Public Records data from a public-records request. Only documented, permitted bulk-export data.
         </p>
+        <div id="opr-travis-note" style="display:none;background:var(--cream);border:1px solid var(--cream-border);border-left:3px solid var(--sky);border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:var(--gray-600)">
+          <strong style="color:var(--primary);display:block;margin-bottom:4px">Travis County (tccsearch.org)</strong>
+          Log in → <em>Official Public Records</em> → set date range to last month → Document Type: <strong>Real Property</strong> → Export CSV. Expected columns: Document Number, Recording Date, Document Type, Grantor, Grantee, Legal Description, Property Address, Consideration Amount.
+        </div>
         <div class="upload-zone" id="opr-zone">
           <div class="upload-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1021,6 +1025,7 @@ function showSection(id) {
   event.target.classList.add('active');
   if (id === 'jobs') loadJobs();
   if (id === 'counties') loadCounties();
+  if (id === 'upload') populateCountySelects(countiesData);
 }
 
 function toggleFilters(btn) {
@@ -1671,6 +1676,15 @@ function populateCountySelects(counties) {
       `<option value="${c.name}"${c.name === current ? ' selected' : ''}>${c.display_name}</option>`
     ).join('');
   });
+  toggleTravisNote();
+}
+
+function toggleTravisNote() {
+  const sel  = document.getElementById('opr-county');
+  const note = document.getElementById('opr-travis-note');
+  if (!sel || !note) return;
+  note.style.display = sel.value === 'travis' ? 'block' : 'none';
+  sel.onchange = toggleTravisNote;
 }
 
 function openAddCountyModal() {
