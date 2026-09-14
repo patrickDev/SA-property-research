@@ -14,6 +14,7 @@
 import puppeteer, { type Browser, type Page } from "@cloudflare/puppeteer";
 import type { Env } from "../types";
 import { buildOprCsv, lastMonthIsoRange, submitScraperResult } from "./pipeline";
+import type { DateRange } from "./harris";
 
 const COUNTIES: Record<string, { url: string; name: string; docTypes?: string }> = {
   bexar:  { url: "https://bexar.tx.publicsearch.us",  name: "Bexar",  docTypes: "APPT,SUB" },
@@ -74,11 +75,12 @@ async function extractRows(page: Page): Promise<Record<string, string>[]> {
 async function scrapeCounty(
   env: Env,
   browser: Browser,
-  countyKey: string
+  countyKey: string,
+  dateRange?: DateRange
 ): Promise<void> {
   const meta   = COUNTIES[countyKey] ?? { url: "", name: countyKey };
   const county = meta.name;
-  const { from, to } = lastMonthIsoRange();
+  const { from, to } = dateRange ?? lastMonthIsoRange();
   console.log(`[${county}] Scraping ${from} → ${to}`);
 
   const page = await browser.newPage();
@@ -123,12 +125,13 @@ async function scrapeCounty(
 
 export async function scrapePublicSearch(
   env: Env,
-  counties = ["dallas", "denton"]
+  counties = ["bexar", "dallas", "denton"],
+  dateRange?: DateRange
 ): Promise<void> {
   const browser = await puppeteer.connect(env.BROWSER);
   try {
     for (const key of counties) {
-      await scrapeCounty(env, browser, key).catch(err =>
+      await scrapeCounty(env, browser, key, dateRange).catch(err =>
         console.error(`[${key}] scrape failed:`, err)
       );
     }

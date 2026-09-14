@@ -66,9 +66,10 @@
 
   // Cron triggers:
   //   0 2 * * *   — daily 2 AM UTC: retention cleanup
-  //   0 8 1 * *   — 1st of month 8 AM UTC (2 AM CT): county record scraping
+  //   0 9 * * *   — daily 9 AM UTC (3 AM CT): OPR scrape yesterday + BCAD enrichment
+  //   0 8 1 * *   — 1st of month 8 AM UTC (2 AM CT): full prior-month catch-up
   "triggers": {
-    "crons": ["0 2 * * *", "0 8 1 * *"]
+    "crons": ["0 2 * * *", "0 9 * * *", "0 8 1 * *"]
   },
 
   // Default environment variables (override with wrangler secret or .dev.vars)

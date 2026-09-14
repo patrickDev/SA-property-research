@@ -16,6 +16,7 @@
 import puppeteer, { type Browser, type Page } from "@cloudflare/puppeteer";
 import type { Env } from "../types";
 import { buildOprCsv, lastMonthSlashRange, submitScraperResult } from "./pipeline";
+import type { DateRange } from "./harris";
 
 const BASE_URL   = "https://tccsearch.org";
 const LOGIN_URL  = `${BASE_URL}/default.aspx`;
@@ -208,7 +209,7 @@ async function goToNextPage(page: Page, currentPage: number): Promise<boolean> {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export async function scrapeTravis(env: Env): Promise<void> {
+export async function scrapeTravis(env: Env, dateRange?: DateRange): Promise<void> {
   const username = env.TRAVIS_USERNAME;
   const password = env.TRAVIS_PASSWORD;
 
@@ -217,7 +218,7 @@ export async function scrapeTravis(env: Env): Promise<void> {
     return;
   }
 
-  const { from, to } = lastMonthSlashRange();
+  const { from, to } = dateRange ?? lastMonthSlashRange();
   console.log(`[travis] Scraping ${from} → ${to}`);
 
   const browser: Browser = await puppeteer.connect(env.BROWSER);

@@ -99,3 +99,20 @@ export function lastMonthIsoRange(): { from: string; to: string } {
     to:   end.toISOString().slice(0, 10),
   };
 }
+
+/** Returns { from: "YYYY-MM-DD", to: "YYYY-MM-DD" } for yesterday (UTC) */
+export function lastYesterdayIsoRange(): { from: string; to: string } {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  const s = d.toISOString().slice(0, 10);
+  return { from: s, to: s };
+}
+
+/** Returns { from: "MM/DD/YYYY", to: "MM/DD/YYYY" } for yesterday (UTC) */
+export function lastYesterdaySlashRange(): { from: string; to: string } {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - 1);
+  const fmt = (dt: Date) =>
+    `${String(dt.getUTCMonth() + 1).padStart(2, "0")}/${String(dt.getUTCDate()).padStart(2, "0")}/${dt.getUTCFullYear()}`;
+  return { from: fmt(d), to: fmt(d) };
+}

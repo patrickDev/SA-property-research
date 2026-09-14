@@ -1016,6 +1016,16 @@ async function ensureDevAuth() {
   setupUploadZones();
   loadJobs();
   loadCounties();
+
+  // Refresh active section data when user returns to the tab
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    const active = document.querySelector('.section.active');
+    if (!active) return;
+    const id = active.id;
+    if (id === 'counties') loadCounties();
+    else if (id === 'jobs') loadJobs();
+  });
 })();
 
 // ── Navigation ────────────────────────────────────────────────────────────────

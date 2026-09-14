@@ -11,6 +11,8 @@
 import type { Env } from "../types";
 import { buildOprCsv, lastMonthSlashRange, submitScraperResult } from "./pipeline";
 
+export type DateRange = { from: string; to: string };
+
 const BASE_URL  = "https://www.cclerk.hctx.net/Applications/WebSearch/RP.aspx";
 const DOC_TYPES = ["APP", "SUB"]; // Appointment + Substitution of Substitute Trustee
 const COUNTY    = "Harris";
@@ -167,9 +169,9 @@ async function scrapeDocType(
   return rows;
 }
 
-export async function scrapeHarris(env: Env): Promise<void> {
+export async function scrapeHarris(env: Env, dateRange?: DateRange): Promise<void> {
   console.log("[harris] Starting scrape");
-  const { from, to } = lastMonthSlashRange();
+  const { from, to } = dateRange ?? lastMonthSlashRange();
   console.log(`[harris] Date range: ${from} → ${to}, types: ${DOC_TYPES.join(", ")}`);
 
   // GET the form once to capture VIEWSTATE and cookies

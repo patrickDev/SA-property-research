@@ -122,9 +122,12 @@ async function handleScheduled(
   env: Env,
   ctx: ExecutionContext
 ): Promise<void> {
-  if (controller.cron === "0 8 1 * *") {
-    // 1st of month at 8 AM UTC — run county scrapers
-    ctx.waitUntil(runScrapers(env));
+  if (controller.cron === "0 9 * * *") {
+    // Daily at 9 AM UTC (3 AM CT) — scrape yesterday's filings + BCAD enrichment
+    ctx.waitUntil(runScrapers(env, "daily"));
+  } else if (controller.cron === "0 8 1 * *") {
+    // 1st of month at 8 AM UTC — full prior-month catch-up
+    ctx.waitUntil(runScrapers(env, "monthly"));
   } else {
     // Default daily cron (0 2 * * *) — retention cleanup
     await handleRetention(controller, env, ctx);
