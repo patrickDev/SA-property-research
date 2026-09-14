@@ -4,6 +4,7 @@ import { jsonOk, jsonError } from "../router";
 function formatJob(row: ImportJobRow): JobResponse {
   return {
     jobId: row.id,
+    county: row.county,
     status: row.status,
     jobType: row.job_type,
     totalRecords: row.total_records,

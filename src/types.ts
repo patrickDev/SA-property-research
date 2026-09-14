@@ -262,6 +262,7 @@ export interface OprCsvRow {
 
 export interface JobResponse {
   jobId: string;
+  county: string;
   status: JobStatus;
   jobType: JobType;
   totalRecords: number;

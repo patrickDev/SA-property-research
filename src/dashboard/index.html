@@ -1030,6 +1030,7 @@ async function ensureDevAuth() {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function showSection(id) {
+  if (id !== 'jobs') stopJobsPolling();
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -1141,32 +1142,68 @@ function pollJob(jobId, statusEl) {
 }
 
 // ── Jobs ──────────────────────────────────────────────────────────────────────
+let _jobsPoller = null;
+
+function startJobsPolling() {
+  stopJobsPolling();
+  _jobsPoller = setInterval(async () => {
+    const active = document.querySelector('.section.active');
+    if (!active || active.id !== 'jobs') { stopJobsPolling(); return; }
+    const hasInFlight = await loadJobsSilent();
+    if (!hasInFlight) stopJobsPolling();
+  }, 3000);
+}
+
+function stopJobsPolling() {
+  if (_jobsPoller) { clearInterval(_jobsPoller); _jobsPoller = null; }
+}
+
+async function loadJobsSilent() {
+  // Refresh without showing spinner; returns true if any jobs still in-flight
+  const el = document.getElementById('jobs-list');
+  try {
+    const resp = await apiFetch('/api/jobs');
+    const data = await resp.json();
+    if (!data.jobs || !data.jobs.length) return false;
+    renderJobsTable(el, data.jobs);
+    return data.jobs.some(j => j.status === 'pending' || j.status === 'processing');
+  } catch { return false; }
+}
+
 async function loadJobs() {
   const el = document.getElementById('jobs-list');
   el.innerHTML = '<div class="alert alert-info"><span class="spinner"></span> Loading&hellip;</div>';
   try {
     const resp = await apiFetch('/api/jobs');
     const data = await resp.json();
-    if (!data.jobs.length) {
+    if (!data.jobs || !data.jobs.length) {
       el.innerHTML = `<div class="empty"><div class="empty-icon">&#x1F4CB;</div><div class="empty-text">No jobs yet</div><div class="empty-hint">Upload a file to get started</div></div>`;
       return;
     }
-    el.innerHTML = `<div class="table-wrap"><table>
-      <thead><tr><th>Job ID</th><th>Type</th><th>Status</th><th>Progress</th><th>Created</th><th>Action</th></tr></thead>
-      <tbody>${data.jobs.map(j => `
-        <tr>
-          <td><span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-500)">${j.jobId.slice(0,8)}&hellip;</span></td>
-          <td><span class="tag">${j.jobType.replace('_',' ')}</span></td>
-          <td>${statusBadge(j.status)}</td>
-          <td style="color:var(--gray-600)">${j.totalRecords > 0 ? `${j.processedRecords.toLocaleString()} / ${j.totalRecords.toLocaleString()}` : '&mdash;'}</td>
-          <td style="color:var(--gray-500);font-size:12px">${new Date(j.createdAt).toLocaleString()}</td>
-          <td>${j.downloadUrl ? `<a href="${j.downloadUrl}" class="btn btn-secondary btn-sm">&#8595; Download</a>` : ''}</td>
-        </tr>
-      `).join('')}</tbody>
-    </table></div>`;
+    renderJobsTable(el, data.jobs);
+    if (data.jobs.some(j => j.status === 'pending' || j.status === 'processing')) {
+      startJobsPolling();
+    }
   } catch (e) {
     el.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
   }
+}
+
+function renderJobsTable(el, jobs) {
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr><th>Job ID</th><th>County</th><th>Type</th><th>Status</th><th>Progress</th><th>Created</th><th>Action</th></tr></thead>
+    <tbody>${jobs.map(j => `
+      <tr>
+        <td><span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-500)">${j.jobId.slice(0,8)}&hellip;</span></td>
+        <td style="color:var(--gray-600);font-size:12px">${j.county || '&mdash;'}</td>
+        <td><span class="tag">${j.jobType.replace('_',' ')}</span></td>
+        <td>${statusBadge(j.status)}</td>
+        <td style="color:var(--gray-600)">${j.totalRecords > 0 ? `${j.processedRecords.toLocaleString()} / ${j.totalRecords.toLocaleString()}` : '&mdash;'}</td>
+        <td style="color:var(--gray-500);font-size:12px">${new Date(j.createdAt).toLocaleString()}</td>
+        <td>${j.downloadUrl ? `<a href="${j.downloadUrl}" class="btn btn-secondary btn-sm">&#8595; Download</a>` : ''}</td>
+      </tr>
+    `).join('')}</tbody>
+  </table></div>`;
 }
 
 function statusBadge(status) {
@@ -1804,13 +1841,14 @@ async function pullCountyData(county, btn) {
     if (!resp.ok) throw new Error(data.error || 'Failed');
     btn.textContent = 'Running…';
     btn.style.background = 'var(--success)';
-    // Navigate to Jobs so the user can watch progress
-    setTimeout(() => showSectionDirect('jobs'), 1200);
+    // Navigate to Jobs immediately and start live polling
+    showSectionDirect('jobs');
+    startJobsPolling();
     setTimeout(() => {
       btn.disabled = false;
       btn.textContent = origText;
       btn.style.background = '';
-    }, 8000);
+    }, 6000);
   } catch (e) {
     btn.textContent = 'Error';
     btn.style.background = 'var(--danger)';
@@ -1823,6 +1861,7 @@ async function pullCountyData(county, btn) {
 }
 
 function showSectionDirect(id) {
+  if (id !== 'jobs') stopJobsPolling();
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
