@@ -17,7 +17,7 @@ import { scrapeHarris } from "./harris";
 import { scrapePublicSearch } from "./publicsearch";
 import { scrapeTravis } from "./travis";
 
-const PUBLICSEARCH_COUNTIES = ["dallas", "denton"];
+const PUBLICSEARCH_COUNTIES = ["bexar", "dallas", "denton"];
 
 export async function runScrapers(env: Env): Promise<void> {
   console.log("[scrapers] Starting monthly county scrape");

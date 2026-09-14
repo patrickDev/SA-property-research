@@ -1,20 +1,24 @@
 /**
  * PublicSearch.us Browser Rendering scraper
- * Covers: Dallas (dallas.tx.publicsearch.us) and Denton (denton.tx.publicsearch.us)
+ * Covers: Bexar  (bexar.tx.publicsearch.us)   — APPT + SUB doc types only
+ *         Dallas (dallas.tx.publicsearch.us)   — all RP records
+ *         Denton (denton.tx.publicsearch.us)   — all RP records
  *
  * Uses Cloudflare Browser Rendering (@cloudflare/puppeteer) because these are
  * React SPAs that require JavaScript execution to render search results.
  *
- * Collects all Real Property records from the prior calendar month.
+ * Collects records from the prior calendar month.
+ * Optional docTypes field filters by instrument type (comma-separated codes).
  */
 
 import puppeteer, { type Browser, type Page } from "@cloudflare/puppeteer";
 import type { Env } from "../types";
 import { buildOprCsv, lastMonthIsoRange, submitScraperResult } from "./pipeline";
 
-const COUNTIES: Record<string, { url: string; name: string }> = {
-  dallas: { url: "https://dallas.tx.publicsearch.us", name: "Dallas" },
-  denton: { url: "https://denton.tx.publicsearch.us", name: "Denton" },
+const COUNTIES: Record<string, { url: string; name: string; docTypes?: string }> = {
+  bexar:  { url: "https://bexar.tx.publicsearch.us",  name: "Bexar",  docTypes: "APPT,SUB" },
+  dallas: { url: "https://dallas.tx.publicsearch.us", name: "Dallas", docTypes: "APPT,SUB" },
+  denton: { url: "https://denton.tx.publicsearch.us", name: "Denton", docTypes: "APPT,SUB" },
 };
 
 const PAGE_SIZE = 100;
@@ -85,9 +89,10 @@ async function scrapeCounty(
 
   try {
     while (true) {
+      const docTypeParam = meta.docTypes ? `&docTypes=${meta.docTypes}` : "";
       const url =
         `${meta.url}/results?department=RP&dateFrom=${from}&dateTo=${to}` +
-        `&limit=${PAGE_SIZE}&offset=${offset}`;
+        `${docTypeParam}&limit=${PAGE_SIZE}&offset=${offset}`;
       await page.goto(url, { waitUntil: "networkidle2", timeout: 30_000 });
 
       const rows = await extractRows(page);

@@ -12,7 +12,7 @@ import type { Env } from "../types";
 import { buildOprCsv, lastMonthSlashRange, submitScraperResult } from "./pipeline";
 
 const BASE_URL  = "https://www.cclerk.hctx.net/Applications/WebSearch/RP.aspx";
-const DOC_TYPE  = "APP";
+const DOC_TYPES = ["APP", "SUB"]; // Appointment + Substitution of Substitute Trustee
 const COUNTY    = "Harris";
 
 // ASP.NET field names (discovered from page HTML)
@@ -100,31 +100,25 @@ function nextPageTarget(html: string): string | null {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export async function scrapeHarris(env: Env): Promise<void> {
-  console.log("[harris] Starting scrape");
-  const { from, to } = lastMonthSlashRange();
-  console.log(`[harris] Date range: ${from} → ${to}, type: ${DOC_TYPE}`);
-
-  // Step 1 — GET the form to capture VIEWSTATE
-  const initResp = await fetch(BASE_URL, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; TXPropertySearch/1.0)" },
-  });
-  if (!initResp.ok) throw new Error(`[harris] Initial GET failed: ${initResp.status}`);
-  const initHtml = await initResp.text();
-  const cookies  = initResp.headers.get("set-cookie") ?? "" as string;
-
+/** Scrape one document type and return all rows across all pages */
+async function scrapeDocType(
+  docType: string,
+  from: string,
+  to: string,
+  cookies: string,
+  initHtml: string
+): Promise<Record<string, string>[]> {
   let state = extractAspNetState(initHtml);
 
-  // Step 2 — POST search form
   const searchForm = buildForm(state, {
     [FIELD_FROM]:   from,
     [FIELD_TO]:     to,
-    [FIELD_ITYPE]:  DOC_TYPE,
+    [FIELD_ITYPE]:  docType,
     [FIELD_SEARCH]: "Search",
   });
 
   const searchResp = await fetch(BASE_URL, {
-    method:  "POST",
+    method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
       "User-Agent":   "Mozilla/5.0 (compatible; TXPropertySearch/1.0)",
@@ -133,29 +127,26 @@ export async function scrapeHarris(env: Env): Promise<void> {
     },
     body: searchForm.toString(),
   });
-  if (!searchResp.ok) throw new Error(`[harris] Search POST failed: ${searchResp.status}`);
+  if (!searchResp.ok) throw new Error(`[harris] Search POST failed for ${docType}: ${searchResp.status}`);
 
-  const allRows: Record<string, string>[] = [];
+  const rows: Record<string, string>[] = [];
   let html = await searchResp.text();
   let page = 1;
 
   while (true) {
-    const rows = parseRows(html);
-    console.log(`[harris] Page ${page}: ${rows.length} rows`);
-    allRows.push(...rows);
+    const pageRows = parseRows(html);
+    console.log(`[harris] ${docType} page ${page}: ${pageRows.length} rows`);
+    rows.push(...pageRows);
 
-    // Find next page target — must track current page ourselves
-    const nextTarget = `Page$${page + 1}`;
-    // Check if this page link exists in the HTML
     if (!html.includes(`'Page$${page + 1}'`)) break;
 
     state = extractAspNetState(html);
     const pageForm = buildForm(state, {
       __EVENTTARGET:   "ctl00$ContentPlaceHolder1$GridView1",
-      __EVENTARGUMENT: nextTarget,
+      __EVENTARGUMENT: `Page$${page + 1}`,
       [FIELD_FROM]:    from,
       [FIELD_TO]:      to,
-      [FIELD_ITYPE]:   DOC_TYPE,
+      [FIELD_ITYPE]:   docType,
     });
 
     const pageResp = await fetch(BASE_URL, {
@@ -173,6 +164,37 @@ export async function scrapeHarris(env: Env): Promise<void> {
     page++;
   }
 
+  return rows;
+}
+
+export async function scrapeHarris(env: Env): Promise<void> {
+  console.log("[harris] Starting scrape");
+  const { from, to } = lastMonthSlashRange();
+  console.log(`[harris] Date range: ${from} → ${to}, types: ${DOC_TYPES.join(", ")}`);
+
+  // GET the form once to capture VIEWSTATE and cookies
+  const initResp = await fetch(BASE_URL, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; TXPropertySearch/1.0)" },
+  });
+  if (!initResp.ok) throw new Error(`[harris] Initial GET failed: ${initResp.status}`);
+  const initHtml = await initResp.text();
+  const cookies  = initResp.headers.get("set-cookie") ?? "" as string;
+
+  // Run one search per doc type and merge, deduplicating by Document Number
+  const seen = new Set<string>();
+  const allRows: Record<string, string>[] = [];
+
+  for (const docType of DOC_TYPES) {
+    const rows = await scrapeDocType(docType, from, to, cookies, initHtml);
+    for (const row of rows) {
+      const key = row["Document Number"];
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        allRows.push(row);
+      }
+    }
+  }
+
   console.log(`[harris] Total rows collected: ${allRows.length}`);
   if (!allRows.length) {
     console.log("[harris] No records — nothing to import");
@@ -184,6 +206,6 @@ export async function scrapeHarris(env: Env): Promise<void> {
     county:     COUNTY,
     jobType:    "opr_import",
     csvContent: csv,
-    label:      `Harris County APP docs ${from}–${to}`,
+    label:      `Harris County ${DOC_TYPES.join("+")} docs ${from}–${to}`,
   });
 }
