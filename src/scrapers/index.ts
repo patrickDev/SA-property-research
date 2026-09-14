@@ -15,6 +15,7 @@
 import type { Env } from "../types";
 import { scrapeHarris } from "./harris";
 import { scrapePublicSearch } from "./publicsearch";
+import { scrapeTravis } from "./travis";
 
 const PUBLICSEARCH_COUNTIES = ["dallas", "denton"];
 
@@ -46,6 +47,14 @@ export async function runScrapers(env: Env): Promise<void> {
     tasks.push(
       scrapePublicSearch(env, psCounties).catch(err =>
         console.error("[scrapers] PublicSearch failed:", err)
+      )
+    );
+  }
+
+  if (activeKeys.has("travis")) {
+    tasks.push(
+      scrapeTravis(env).catch(err =>
+        console.error("[scrapers] Travis failed:", err)
       )
     );
   }

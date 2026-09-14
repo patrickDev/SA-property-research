@@ -17,6 +17,9 @@ export interface Env {
   CF_ACCESS_AUDIENCE?: string;
   /** Cloudflare Access team domain, e.g. "myteam.cloudflareaccess.com" */
   CF_ACCESS_TEAM_DOMAIN?: string;
+  /** Travis County Clerk login credentials (set via wrangler secret) */
+  TRAVIS_USERNAME?: string;
+  TRAVIS_PASSWORD?: string;
 }
 
 // ─── Queue ────────────────────────────────────────────────────────────────────
