@@ -19,6 +19,8 @@ interface CountyConfig {
   opr_url: string | null;
   active: number;
   created_at: string;
+  last_opr_scrape_at: string | null;
+  last_bcad_scrape_at: string | null;
 }
 
 // ─── GET /api/counties ────────────────────────────────────────────────────────
@@ -35,6 +37,7 @@ export async function handleListCounties(
     SELECT
       c.id, c.name, c.display_name, c.city, c.state,
       c.bcad_url, c.opr_url, c.active, c.created_at,
+      c.last_opr_scrape_at, c.last_bcad_scrape_at,
       COUNT(DISTINCT p.id)                                          AS total_properties,
       COALESCE(SUM(CASE WHEN p.commercial = 1 THEN 1 ELSE 0 END),0) AS commercial_properties,
       COALESCE(SUM(p.total_appraised_value), 0)                    AS total_appraised_value,

@@ -57,6 +57,12 @@ export async function submitScraperResult(
   // Enqueue processing
   await env.IMPORT_QUEUE.send({ jobId, type: jobType, batchOffset: 0, batchSize: 500 });
 
+  // Stamp last successful scrape time on county_configs
+  const scrapeCol = jobType === "bcad_import" ? "last_bcad_scrape_at" : "last_opr_scrape_at";
+  await env.DB.prepare(
+    `UPDATE county_configs SET ${scrapeCol} = ? WHERE LOWER(name) = LOWER(?)`
+  ).bind(now, county).run().catch(() => {}); // non-fatal if county not found
+
   console.log(`[scraper] ${county} — queued job ${jobId} (${bytes.length} bytes)`);
   return jobId;
 }

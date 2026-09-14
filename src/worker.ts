@@ -20,6 +20,7 @@ import {
 } from "./handlers/properties";
 import { handleListCounties, handleAddCounty, handleDeleteCounty } from "./handlers/counties";
 import { handleCreateExport } from "./handlers/exports";
+import { handleRunScraper } from "./handlers/scrapers";
 import { handleAddNote, handleAddCallStatus } from "./handlers/notes";
 import { handleQueue } from "./queue/consumer";
 import { handleRetention } from "./queue/retention-processor";
@@ -58,6 +59,9 @@ router.post("/api/properties/:propertyId/phone", handleUpdateOwnerPhone);
 
 // Exports (admin only, enforced inside handler)
 router.post("/api/exports/commercial-properties", handleCreateExport);
+
+// Manual scraper trigger (admin only, enforced inside handler)
+router.post("/api/scrapers/run", handleRunScraper);
 
 // ─── Fetch handler ────────────────────────────────────────────────────────────
 

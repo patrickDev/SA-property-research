@@ -1647,16 +1647,17 @@ function renderCountyCards(counties) {
         <div class="county-imports">
           <div class="county-import-row">
             <span class="county-import-lbl">BCAD last import</span>
-            <span class="county-import-date">${fmtDate(c.last_bcad_import)}</span>
+            <span class="county-import-date">${fmtDate(c.last_bcad_scrape_at || c.last_bcad_import)}</span>
           </div>
           <div class="county-import-row">
-            <span class="county-import-lbl">OPR last import</span>
-            <span class="county-import-date">${fmtDate(c.last_opr_import)}</span>
+            <span class="county-import-lbl">OPR last scrape</span>
+            <span class="county-import-date">${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</span>
           </div>
         </div>
         <div style="display:flex;gap:8px;padding:14px 16px 16px" onclick="event.stopPropagation()">
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="viewCountyProperties('${c.name}')">View Properties</button>
-          <button class="btn btn-sky btn-sm" onclick="importForCounty('${c.name}')">Import</button>
+          <button class="btn btn-sky btn-sm" onclick="pullCountyData('${c.name}', this)">Pull Data</button>
+          <button class="btn btn-secondary btn-sm" onclick="importForCounty('${c.name}')">Import</button>
         </div>
       </div>
     </div>
@@ -1787,6 +1788,38 @@ function importForCounty(county) {
     const sel = document.getElementById(id);
     if (sel) sel.value = county;
   });
+}
+
+async function pullCountyData(county, btn) {
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Starting…';
+  try {
+    const resp = await apiFetch('/api/scrapers/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ county, mode: 'daily' }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Failed');
+    btn.textContent = 'Running…';
+    btn.style.background = 'var(--success)';
+    // Navigate to Jobs so the user can watch progress
+    setTimeout(() => showSectionDirect('jobs'), 1200);
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = origText;
+      btn.style.background = '';
+    }, 8000);
+  } catch (e) {
+    btn.textContent = 'Error';
+    btn.style.background = 'var(--danger)';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = origText;
+      btn.style.background = '';
+    }, 3000);
+  }
 }
 
 function showSectionDirect(id) {
