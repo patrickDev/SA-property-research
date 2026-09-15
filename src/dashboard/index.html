@@ -506,6 +506,25 @@
       font-size: 9px; color: var(--gray-400); font-weight: 700;
       text-transform: uppercase; letter-spacing: .04em; margin-top: 3px;
     }
+    /* Filing type breakdown rows inside OPR section */
+    .opr-filing-rows { padding: 6px 14px 10px; display: flex; flex-direction: column; gap: 5px; }
+    .opr-filing-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px; border-radius: 6px;
+      background: rgba(255,255,255,.6);
+    }
+    .opr-filing-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .opr-filing-label { flex: 1; font-size: 11px; font-weight: 600; color: var(--gray-700); }
+    .opr-filing-sublabel { font-size: 9px; color: var(--gray-400); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+    .opr-filing-count { font-size: 14px; font-weight: 800; color: var(--gray-700); min-width: 32px; text-align: right; }
+    .opr-filing-urgency {
+      font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+      padding: 2px 6px; border-radius: 10px;
+    }
+    .urgency-pre  { background: rgba(251,191,36,.2);  color: #92400e; }
+    .urgency-now  { background: rgba(239,68,68,.15);  color: #991b1b; }
     /* Import dates row */
     .county-imports {
       padding: 10px 14px; background: var(--cream);
@@ -1717,10 +1736,39 @@ function renderCountyCards(counties) {
             <span class="county-section-badge county-section-badge-opr">OPR · County Clerk</span>
           </div>
           <div class="county-stats-row">
-            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">Residential Properties</div></div>
-            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">Commercial Properties</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">Residential</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">Commercial</div></div>
           </div>
-          <div style="padding:6px 14px 8px;font-size:10px;color:rgba(230,81,0,.5)">Last pulled: ${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</div>
+          <div class="opr-filing-rows">
+            <div class="opr-filing-row">
+              <div class="opr-filing-dot" style="background:#f59e0b"></div>
+              <div style="flex:1">
+                <div class="opr-filing-label">Trustee Appointment</div>
+                <div class="opr-filing-sublabel">APPT / SUB</div>
+              </div>
+              <span class="opr-filing-urgency urgency-pre">Pre-FC</span>
+              <div class="opr-filing-count">${fmt(c.appt_docs)}</div>
+            </div>
+            <div class="opr-filing-row">
+              <div class="opr-filing-dot" style="background:#f97316"></div>
+              <div style="flex:1">
+                <div class="opr-filing-label">Lis Pendens</div>
+                <div class="opr-filing-sublabel">LIS · Lawsuit Filed</div>
+              </div>
+              <span class="opr-filing-urgency urgency-pre">Pre-FC</span>
+              <div class="opr-filing-count">${fmt(c.lis_docs)}</div>
+            </div>
+            <div class="opr-filing-row">
+              <div class="opr-filing-dot" style="background:#ef4444"></div>
+              <div style="flex:1">
+                <div class="opr-filing-label">Notice of Sale</div>
+                <div class="opr-filing-sublabel">NTS · Sale Date Set</div>
+              </div>
+              <span class="opr-filing-urgency urgency-now">Urgent</span>
+              <div class="opr-filing-count">${fmt(c.nts_docs)}</div>
+            </div>
+          </div>
+          <div style="padding:4px 14px 8px;font-size:10px;color:rgba(230,81,0,.5)">Last pulled: ${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</div>
         </div>
         <div style="display:flex;gap:8px;padding:14px 16px 16px" onclick="event.stopPropagation()">
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="viewCountyProperties('${c.name}')">View Properties</button>

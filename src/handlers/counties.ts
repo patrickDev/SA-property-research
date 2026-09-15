@@ -58,11 +58,15 @@ export async function handleListCounties(
   // OPR doc counts per county (total + residential/commercial via linked property)
   const oprResult = await env.DB.prepare(`
     SELECT
-      UPPER(od.county)                                                   AS county_upper,
-      MAX(od.import_date)                                                AS last_opr_import,
-      COUNT(DISTINCT od.id)                                              AS total_opr_docs,
-      COUNT(DISTINCT CASE WHEN p.commercial = 0 THEN od.id END)         AS residential_opr_docs,
-      COUNT(DISTINCT CASE WHEN p.commercial = 1 THEN od.id END)         AS commercial_opr_docs
+      UPPER(od.county)                                                        AS county_upper,
+      MAX(od.import_date)                                                     AS last_opr_import,
+      COUNT(DISTINCT od.id)                                                   AS total_opr_docs,
+      COUNT(DISTINCT CASE WHEN p.commercial = 0 THEN od.id END)              AS residential_opr_docs,
+      COUNT(DISTINCT CASE WHEN p.commercial = 1 THEN od.id END)              AS commercial_opr_docs,
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) IN ('APPT','APP') THEN od.id END) AS appt_docs,
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'SUB'  THEN od.id END)          AS sub_docs,
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'LIS'  THEN od.id END)          AS lis_docs,
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'NTS'  THEN od.id END)          AS nts_docs
     FROM opr_documents od
     LEFT JOIN opr_property_links opl ON od.id = opl.opr_document_id
     LEFT JOIN properties p ON opl.property_id = p.id
@@ -73,6 +77,10 @@ export async function handleListCounties(
     total_opr_docs: number;
     residential_opr_docs: number;
     commercial_opr_docs: number;
+    appt_docs: number;
+    sub_docs: number;
+    lis_docs: number;
+    nts_docs: number;
   }>();
 
   const oprMap = new Map(
@@ -87,6 +95,9 @@ export async function handleListCounties(
       total_opr_docs:       opr?.total_opr_docs        ?? 0,
       residential_opr_docs: opr?.residential_opr_docs  ?? 0,
       commercial_opr_docs:  opr?.commercial_opr_docs   ?? 0,
+      appt_docs:            (opr?.appt_docs ?? 0) + (opr?.sub_docs ?? 0),
+      lis_docs:             opr?.lis_docs              ?? 0,
+      nts_docs:             opr?.nts_docs              ?? 0,
     };
   });
 
