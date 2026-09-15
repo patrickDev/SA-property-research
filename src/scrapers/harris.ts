@@ -14,7 +14,7 @@ import { buildOprCsv, lastMonthSlashRange, submitScraperResult } from "./pipelin
 export type DateRange = { from: string; to: string };
 
 const BASE_URL  = "https://www.cclerk.hctx.net/Applications/WebSearch/RP.aspx";
-const DOC_TYPES = ["APP", "SUB"]; // Appointment + Substitution of Substitute Trustee
+const DOC_TYPES = ["APP", "SUB", "LIS", "NTS"]; // Appointment + Substitution + Lis Pendens + Notice of Trustee Sale
 const COUNTY    = "Harris";
 
 // ASP.NET field names (discovered from page HTML)

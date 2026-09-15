@@ -18,9 +18,9 @@ import { buildOprCsv, lastMonthIsoRange, submitScraperResult } from "./pipeline"
 import type { DateRange } from "./harris";
 
 const COUNTIES: Record<string, { url: string; name: string; docTypes?: string }> = {
-  bexar:  { url: "https://bexar.tx.publicsearch.us",  name: "Bexar",  docTypes: "APPT,SUB" },
-  dallas: { url: "https://dallas.tx.publicsearch.us", name: "Dallas", docTypes: "APPT,SUB" },
-  denton: { url: "https://denton.tx.publicsearch.us", name: "Denton", docTypes: "APPT,SUB" },
+  bexar:  { url: "https://bexar.tx.publicsearch.us",  name: "Bexar",  docTypes: "APPT,SUB,LIS,NTS" },
+  dallas: { url: "https://dallas.tx.publicsearch.us", name: "Dallas", docTypes: "APPT,SUB,LIS,NTS" },
+  denton: { url: "https://denton.tx.publicsearch.us", name: "Denton", docTypes: "APPT,SUB,LIS,NTS" },
 };
 
 type RowRecord = Record<string, string>;
