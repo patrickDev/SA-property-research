@@ -828,7 +828,7 @@
     </div>
 
     <div class="filing-pills">
-      <button class="filing-pill filing-pill-all active" onclick="setFilingFilter('', this)">All Properties</button>
+      <button class="filing-pill filing-pill-all active" onclick="setFilingFilter('', this)">All Filings</button>
       <button class="filing-pill filing-pill-appt" onclick="setFilingFilter('APP', this)">
         <span class="filing-pill-dot" style="background:#f59e0b"></span>Trustee Appointment
       </button>
@@ -837,6 +837,15 @@
       </button>
       <button class="filing-pill filing-pill-nts" onclick="setFilingFilter('NTS', this)">
         <span class="filing-pill-dot" style="background:#ef4444"></span>Notice of Sale
+      </button>
+    </div>
+    <div class="filing-pills">
+      <button class="filing-pill filing-pill-all active" id="pill-type-all" onclick="setTypeFilter('', this)">All Types</button>
+      <button class="filing-pill filing-pill-all" id="pill-type-res" onclick="setTypeFilter('false', this)">
+        <span class="filing-pill-dot" style="background:var(--primary)"></span>Residential
+      </button>
+      <button class="filing-pill filing-pill-all" id="pill-type-com" onclick="setTypeFilter('true', this)">
+        <span class="filing-pill-dot" style="background:var(--accent)"></span>Commercial
       </button>
     </div>
 
@@ -1352,7 +1361,14 @@ async function searchProperties(offset = 0) {
 
 function setFilingFilter(docType, btn) {
   document.getElementById('f-doctype').value = docType;
-  document.querySelectorAll('.filing-pill').forEach(p => p.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.filing-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  searchProperties();
+}
+
+function setTypeFilter(value, btn) {
+  document.getElementById('f-commercial').value = value;
+  btn.parentElement.querySelectorAll('.filing-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   searchProperties();
 }
