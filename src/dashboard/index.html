@@ -1742,29 +1742,17 @@ function renderCountyCards(counties) {
           <div class="opr-filing-rows">
             <div class="opr-filing-row">
               <div class="opr-filing-dot" style="background:#f59e0b"></div>
-              <div style="flex:1">
-                <div class="opr-filing-label">Trustee Appointment</div>
-                <div class="opr-filing-sublabel">APPT / SUB</div>
-              </div>
-              <span class="opr-filing-urgency urgency-pre">Pre-FC</span>
+              <div class="opr-filing-label">Trustee Appointment</div>
               <div class="opr-filing-count">${fmt(c.appt_docs)}</div>
             </div>
             <div class="opr-filing-row">
               <div class="opr-filing-dot" style="background:#f97316"></div>
-              <div style="flex:1">
-                <div class="opr-filing-label">Lis Pendens</div>
-                <div class="opr-filing-sublabel">LIS · Lawsuit Filed</div>
-              </div>
-              <span class="opr-filing-urgency urgency-pre">Pre-FC</span>
+              <div class="opr-filing-label">Lis Pendens</div>
               <div class="opr-filing-count">${fmt(c.lis_docs)}</div>
             </div>
             <div class="opr-filing-row">
               <div class="opr-filing-dot" style="background:#ef4444"></div>
-              <div style="flex:1">
-                <div class="opr-filing-label">Notice of Sale</div>
-                <div class="opr-filing-sublabel">NTS · Sale Date Set</div>
-              </div>
-              <span class="opr-filing-urgency urgency-now">Urgent</span>
+              <div class="opr-filing-label">Notice of Sale</div>
               <div class="opr-filing-count">${fmt(c.nts_docs)}</div>
             </div>
           </div>
