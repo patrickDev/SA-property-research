@@ -571,6 +571,26 @@
     }
     .county-context-bar button:hover { background: rgba(255,255,255,.3); }
 
+    /* ── Filing type quick-filter pills ───────────────────────────── */
+    .filing-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .filing-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 20px; border: 1.5px solid transparent;
+      font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s;
+      background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .filing-pill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .filing-pill:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.12); }
+    .filing-pill.active { color: #fff; border-color: transparent; }
+    .filing-pill-all.active  { background: var(--primary); }
+    .filing-pill-appt.active { background: #f59e0b; }
+    .filing-pill-lis.active  { background: #f97316; }
+    .filing-pill-nts.active  { background: #ef4444; }
+    .filing-pill-appt { color: #92400e; border-color: #fde68a; }
+    .filing-pill-lis  { color: #9a3412; border-color: #fed7aa; }
+    .filing-pill-nts  { color: #991b1b; border-color: #fecaca; }
+    .filing-pill-all  { color: var(--primary); border-color: var(--cream-border); }
+
     /* ── Filter toggle (mobile) ────────────────────────────────────── */
     .filter-toggle-btn {
       display: none; align-items: center; gap: 6px;
@@ -805,6 +825,19 @@
     <div class="page-hd">
       <div class="page-title">Properties</div>
       <div class="page-sub">Search and explore Texas commercial properties</div>
+    </div>
+
+    <div class="filing-pills">
+      <button class="filing-pill filing-pill-all active" onclick="setFilingFilter('', this)">All Properties</button>
+      <button class="filing-pill filing-pill-appt" onclick="setFilingFilter('APP', this)">
+        <span class="filing-pill-dot" style="background:#f59e0b"></span>Trustee Appointment
+      </button>
+      <button class="filing-pill filing-pill-lis" onclick="setFilingFilter('LIS', this)">
+        <span class="filing-pill-dot" style="background:#f97316"></span>Lis Pendens
+      </button>
+      <button class="filing-pill filing-pill-nts" onclick="setFilingFilter('NTS', this)">
+        <span class="filing-pill-dot" style="background:#ef4444"></span>Notice of Sale
+      </button>
     </div>
 
     <div class="card" style="margin-bottom:16px">
@@ -1315,6 +1348,13 @@ async function searchProperties(offset = 0) {
     body.innerHTML = '<tr><td colspan="9"></td></tr>';
     alertEl.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
   }
+}
+
+function setFilingFilter(docType, btn) {
+  document.getElementById('f-doctype').value = docType;
+  document.querySelectorAll('.filing-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  searchProperties();
 }
 
 function clearFilters() {
