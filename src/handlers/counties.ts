@@ -60,23 +60,22 @@ export async function handleListCounties(
     SELECT
       UPPER(od.county)                                                        AS county_upper,
       MAX(od.import_date)                                                     AS last_opr_import,
-      COUNT(DISTINCT od.id)                                                   AS total_opr_docs,
-      COUNT(DISTINCT CASE WHEN p.commercial = 0 THEN od.id END)              AS residential_opr_docs,
-      COUNT(DISTINCT CASE WHEN p.commercial = 1 THEN od.id END)              AS commercial_opr_docs,
+      COUNT(DISTINCT od.id)                                                             AS total_opr_docs,
+      COUNT(DISTINCT CASE WHEN opl.property_id IS NOT NULL THEN od.id END)             AS matched_opr_docs,
+      COUNT(DISTINCT CASE WHEN opl.property_id IS NULL     THEN od.id END)             AS unmatched_opr_docs,
       COUNT(DISTINCT CASE WHEN UPPER(od.document_type) IN ('APPT','APP') THEN od.id END) AS appt_docs,
       COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'SUB'  THEN od.id END)          AS sub_docs,
       COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'LIS'  THEN od.id END)          AS lis_docs,
       COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'NTS'  THEN od.id END)          AS nts_docs
     FROM opr_documents od
     LEFT JOIN opr_property_links opl ON od.id = opl.opr_document_id
-    LEFT JOIN properties p ON opl.property_id = p.id
     GROUP BY UPPER(od.county)
   `).all<{
     county_upper: string;
     last_opr_import: string;
     total_opr_docs: number;
-    residential_opr_docs: number;
-    commercial_opr_docs: number;
+    matched_opr_docs: number;
+    unmatched_opr_docs: number;
     appt_docs: number;
     sub_docs: number;
     lis_docs: number;
@@ -93,8 +92,8 @@ export async function handleListCounties(
       ...c,
       last_opr_import:      opr?.last_opr_import      ?? null,
       total_opr_docs:       opr?.total_opr_docs        ?? 0,
-      residential_opr_docs: opr?.residential_opr_docs  ?? 0,
-      commercial_opr_docs:  opr?.commercial_opr_docs   ?? 0,
+      matched_opr_docs:     opr?.matched_opr_docs      ?? 0,
+      unmatched_opr_docs:   opr?.unmatched_opr_docs    ?? 0,
       appt_docs:            (opr?.appt_docs ?? 0) + (opr?.sub_docs ?? 0),
       lis_docs:             opr?.lis_docs              ?? 0,
       nts_docs:             opr?.nts_docs              ?? 0,
@@ -104,13 +103,12 @@ export async function handleListCounties(
   // Global totals across all counties
   const totals = counties.reduce(
     (acc, c) => ({
-      total_properties:       acc.total_properties       + (c.total_properties       ?? 0),
-      residential_properties: acc.residential_properties + (c.residential_properties ?? 0),
-      commercial_properties:  acc.commercial_properties  + (c.commercial_properties  ?? 0),
-      total_appraised_value:  acc.total_appraised_value  + (c.total_appraised_value  ?? 0),
-      total_opr_docs:         acc.total_opr_docs         + (c.total_opr_docs         ?? 0),
+      total_appraised_value: acc.total_appraised_value + (c.total_appraised_value ?? 0),
+      total_opr_docs:        acc.total_opr_docs        + (c.total_opr_docs        ?? 0),
+      matched_opr_docs:      acc.matched_opr_docs      + (c.matched_opr_docs      ?? 0),
+      unmatched_opr_docs:    acc.unmatched_opr_docs    + (c.unmatched_opr_docs    ?? 0),
     }),
-    { total_properties: 0, residential_properties: 0, commercial_properties: 0, total_appraised_value: 0, total_opr_docs: 0 }
+    { total_appraised_value: 0, total_opr_docs: 0, matched_opr_docs: 0, unmatched_opr_docs: 0 }
   );
 
   return jsonOk({ counties, totals });
