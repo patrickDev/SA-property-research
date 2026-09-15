@@ -26,7 +26,7 @@ const COUNTY     = "Travis";
 // ── Login ─────────────────────────────────────────────────────────────────────
 
 async function login(page: Page, username: string, password: string): Promise<void> {
-  await page.goto(LOGIN_URL, { waitUntil: "networkidle2", timeout: 30_000 });
+  await page.goto(LOGIN_URL, { waitUntil: "load", timeout: 30_000 });
 
   // Infragistics WebTextEditor controls wrap actual inputs — try both selectors
   const usernameInput = await page.$("input[id*='txtLogonName']") ??
@@ -66,7 +66,7 @@ async function login(page: Page, username: string, password: string): Promise<vo
   }
 
   // Wait for navigation — could land on disclaimer or search page
-  await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 20_000 }).catch(() => {});
+  await page.waitForNavigation({ waitUntil: "load", timeout: 20_000 }).catch(() => {});
   console.log(`[travis] After login: ${page.url()}`);
 }
 
@@ -79,7 +79,7 @@ async function acceptDisclaimer(page: Page): Promise<void> {
     const agreeLink = await page.$("a[href*='Agree'], input[value*='Agree'], a[href*='acknowledge']");
     if (agreeLink) {
       await agreeLink.click();
-      await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 15_000 }).catch(() => {});
+      await page.waitForNavigation({ waitUntil: "load", timeout: 15_000 }).catch(() => {});
       console.log(`[travis] Disclaimer accepted, now at: ${page.url()}`);
     }
   }
@@ -89,7 +89,7 @@ async function acceptDisclaimer(page: Page): Promise<void> {
 
 async function navigateToSearch(page: Page): Promise<void> {
   if (!page.url().includes("SearchNadr")) {
-    await page.goto(SEARCH_URL, { waitUntil: "networkidle2", timeout: 20_000 });
+    await page.goto(SEARCH_URL, { waitUntil: "load", timeout: 20_000 });
     console.log(`[travis] Navigated to search: ${page.url()}`);
   }
 }
@@ -152,7 +152,7 @@ async function submitSearch(page: Page, from: string, to: string): Promise<void>
     });
   }
 
-  await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 30_000 }).catch(() => {});
+  await page.waitForNavigation({ waitUntil: "load", timeout: 30_000 }).catch(() => {});
 }
 
 // ── Row extraction ────────────────────────────────────────────────────────────
@@ -162,12 +162,11 @@ async function extractRows(page: Page): Promise<Record<string, string>[]> {
     timeout: 15_000,
   }).catch(() => {});
 
-  const fn = new Function(`
-    const rows = [];
-    const trs = document.querySelectorAll("table tbody tr");
-    trs.forEach(tr => {
-      const cells = [...tr.querySelectorAll("td")].map(td => (td.innerText || "").trim());
-      if (cells[0] && !/^(#|No\\.|Num)/i.test(cells[0])) {
+  return (page.evaluate(() => {
+    const rows: Record<string, string>[] = [];
+    document.querySelectorAll("table tbody tr").forEach(tr => {
+      const cells = Array.from(tr.querySelectorAll("td")).map(td => (td.innerText || "").trim());
+      if (cells[0] && !/^(#|No\.|Num)/i.test(cells[0])) {
         rows.push({
           "Document Number":   cells[0] || "",
           "Recording Date":    cells[1] || "",
@@ -181,9 +180,7 @@ async function extractRows(page: Page): Promise<Record<string, string>[]> {
       }
     });
     return rows;
-  `);
-
-  return page.evaluate(fn as () => Record<string, string>[]);
+  }) as Promise<Record<string, string>[]>);
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────
@@ -203,25 +200,25 @@ async function goToNextPage(page: Page, currentPage: number): Promise<boolean> {
     next?.click();
   }, currentPage + 1);
 
-  await page.waitForNavigation({ waitUntil: "networkidle2", timeout: 20_000 }).catch(() => {});
+  await page.waitForNavigation({ waitUntil: "load", timeout: 20_000 }).catch(() => {});
   return true;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export async function scrapeTravis(env: Env, dateRange?: DateRange): Promise<void> {
+export async function scrapeTravis(env: Env, dateRange?: DateRange): Promise<string | undefined> {
   const username = env.TRAVIS_USERNAME;
   const password = env.TRAVIS_PASSWORD;
 
   if (!username || !password) {
     console.warn("[travis] TRAVIS_USERNAME / TRAVIS_PASSWORD secrets not set — skipping");
-    return;
+    return undefined;
   }
 
   const { from, to } = dateRange ?? lastMonthSlashRange();
   console.log(`[travis] Scraping ${from} → ${to}`);
 
-  const browser: Browser = await puppeteer.connect(env.BROWSER);
+  const browser: Browser = await puppeteer.launch(env.BROWSER);
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
@@ -247,10 +244,10 @@ export async function scrapeTravis(env: Env, dateRange?: DateRange): Promise<voi
 
     await page.close();
     console.log(`[travis] Total: ${allRows.length} records`);
-    if (!allRows.length) return;
+    if (!allRows.length) return undefined;
 
     const csv = buildOprCsv(allRows);
-    await submitScraperResult(env, {
+    return submitScraperResult(env, {
       county:     COUNTY,
       jobType:    "opr_import",
       csvContent: csv,
