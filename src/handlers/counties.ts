@@ -38,45 +38,68 @@ export async function handleListCounties(
       c.id, c.name, c.display_name, c.city, c.state,
       c.bcad_url, c.opr_url, c.active, c.created_at,
       c.last_opr_scrape_at, c.last_bcad_scrape_at,
-      COUNT(DISTINCT p.id)                                          AS total_properties,
+      COUNT(DISTINCT p.id)                                           AS total_properties,
+      COALESCE(SUM(CASE WHEN p.commercial = 0 THEN 1 ELSE 0 END),0) AS residential_properties,
       COALESCE(SUM(CASE WHEN p.commercial = 1 THEN 1 ELSE 0 END),0) AS commercial_properties,
-      COALESCE(SUM(p.total_appraised_value), 0)                    AS total_appraised_value,
-      MAX(p.import_date)                                            AS last_bcad_import
+      COALESCE(SUM(p.total_appraised_value), 0)                     AS total_appraised_value,
+      MAX(p.import_date)                                             AS last_bcad_import
     FROM county_configs c
     LEFT JOIN properties p ON UPPER(p.county) = UPPER(c.name)
     GROUP BY c.id
     ORDER BY c.name ASC
   `).all<CountyConfig & {
     total_properties: number;
+    residential_properties: number;
     commercial_properties: number;
     total_appraised_value: number;
     last_bcad_import: string | null;
   }>();
 
-  // OPR import dates per county (separate query — opr_documents table)
+  // OPR doc counts per county (total + residential/commercial via linked property)
   const oprResult = await env.DB.prepare(`
-    SELECT UPPER(county) AS county_upper, MAX(import_date) AS last_opr_import
-    FROM opr_documents
-    GROUP BY UPPER(county)
-  `).all<{ county_upper: string; last_opr_import: string }>();
+    SELECT
+      UPPER(od.county)                                                   AS county_upper,
+      MAX(od.import_date)                                                AS last_opr_import,
+      COUNT(DISTINCT od.id)                                              AS total_opr_docs,
+      COUNT(DISTINCT CASE WHEN p.commercial = 0 THEN od.id END)         AS residential_opr_docs,
+      COUNT(DISTINCT CASE WHEN p.commercial = 1 THEN od.id END)         AS commercial_opr_docs
+    FROM opr_documents od
+    LEFT JOIN opr_property_links opl ON od.id = opl.opr_document_id
+    LEFT JOIN properties p ON opl.property_id = p.id
+    GROUP BY UPPER(od.county)
+  `).all<{
+    county_upper: string;
+    last_opr_import: string;
+    total_opr_docs: number;
+    residential_opr_docs: number;
+    commercial_opr_docs: number;
+  }>();
 
   const oprMap = new Map(
-    (oprResult.results ?? []).map((r) => [r.county_upper, r.last_opr_import])
+    (oprResult.results ?? []).map((r) => [r.county_upper, r])
   );
 
-  const counties = (countiesResult.results ?? []).map((c) => ({
-    ...c,
-    last_opr_import: oprMap.get(c.name.toUpperCase()) ?? null,
-  }));
+  const counties = (countiesResult.results ?? []).map((c) => {
+    const opr = oprMap.get(c.name.toUpperCase());
+    return {
+      ...c,
+      last_opr_import:      opr?.last_opr_import      ?? null,
+      total_opr_docs:       opr?.total_opr_docs        ?? 0,
+      residential_opr_docs: opr?.residential_opr_docs  ?? 0,
+      commercial_opr_docs:  opr?.commercial_opr_docs   ?? 0,
+    };
+  });
 
   // Global totals across all counties
   const totals = counties.reduce(
     (acc, c) => ({
-      total_properties: acc.total_properties + (c.total_properties ?? 0),
-      commercial_properties: acc.commercial_properties + (c.commercial_properties ?? 0),
-      total_appraised_value: acc.total_appraised_value + (c.total_appraised_value ?? 0),
+      total_properties:       acc.total_properties       + (c.total_properties       ?? 0),
+      residential_properties: acc.residential_properties + (c.residential_properties ?? 0),
+      commercial_properties:  acc.commercial_properties  + (c.commercial_properties  ?? 0),
+      total_appraised_value:  acc.total_appraised_value  + (c.total_appraised_value  ?? 0),
+      total_opr_docs:         acc.total_opr_docs         + (c.total_opr_docs         ?? 0),
     }),
-    { total_properties: 0, commercial_properties: 0, total_appraised_value: 0 }
+    { total_properties: 0, residential_properties: 0, commercial_properties: 0, total_appraised_value: 0, total_opr_docs: 0 }
   );
 
   return jsonOk({ counties, totals });

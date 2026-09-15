@@ -430,6 +430,7 @@
     #cs-counties-stat::before  { background: var(--sky); }
     #cs-props-stat::before     { background: #fff; }
     #cs-comm-stat::before      { background: var(--accent); }
+    #cs-opr-stat::before       { background: var(--sky); }
     #cs-value-stat::before     { background: var(--accent); }
     .summary-stat-val {
       font-size: 28px; font-weight: 900; line-height: 1;
@@ -469,14 +470,15 @@
     }
     .county-pill-active { background: var(--accent); color: #fff; }
     .county-pill-empty  { background: rgba(255,255,255,.12); color: rgba(255,255,255,.5); }
-    /* County stats row — 3 columns, each a different brand color */
-    .county-stats-row { display: grid; grid-template-columns: repeat(3,1fr); }
+    /* County stats row — 2×2 grid */
+    .county-stats-row { display: grid; grid-template-columns: repeat(2,1fr); }
     .county-stat {
-      padding: 16px 10px; text-align: center;
+      padding: 14px 10px; text-align: center;
       border-right: 1px solid var(--cream-border);
       border-bottom: 1px solid var(--cream-border);
     }
-    .county-stat:last-child { border-right: none; }
+    .county-stat:nth-child(2n) { border-right: none; }
+    .county-stat:nth-last-child(-n+2) { border-bottom: none; }
     .county-stat-val { font-size: 18px; font-weight: 800; line-height: 1; }
     .county-stat-val-navy   { color: var(--primary); }
     .county-stat-val-orange { color: var(--accent); }
@@ -605,8 +607,9 @@
     <!-- Summary bar -->
     <div class="county-summary-bar" id="county-summary-bar">
       <div class="summary-stat" id="cs-counties-stat"><div class="summary-stat-val summary-stat-sky" id="cs-counties">—</div><div class="summary-stat-lbl">Counties</div></div>
-      <div class="summary-stat" id="cs-props-stat"><div class="summary-stat-val" id="cs-props">—</div><div class="summary-stat-lbl">Total Properties</div></div>
+      <div class="summary-stat" id="cs-props-stat"><div class="summary-stat-val" id="cs-props">—</div><div class="summary-stat-lbl">Residential</div></div>
       <div class="summary-stat" id="cs-comm-stat"><div class="summary-stat-val summary-stat-accent" id="cs-comm">—</div><div class="summary-stat-lbl">Commercial</div></div>
+      <div class="summary-stat" id="cs-opr-stat"><div class="summary-stat-val summary-stat-sky" id="cs-opr">—</div><div class="summary-stat-lbl">OPR Docs</div></div>
       <div class="summary-stat" id="cs-value-stat"><div class="summary-stat-val summary-stat-accent" id="cs-value">—</div><div class="summary-stat-lbl">Total Value</div></div>
     </div>
 
@@ -1646,8 +1649,9 @@ function renderCountySummary(totals) {
     return `$${fmt(n)}`;
   };
   document.getElementById('cs-counties').textContent = countiesData.length;
-  document.getElementById('cs-props').textContent = fmt(totals.total_properties);
+  document.getElementById('cs-props').textContent = fmt(totals.residential_properties);
   document.getElementById('cs-comm').textContent = fmt(totals.commercial_properties);
+  document.getElementById('cs-opr').textContent = fmt(totals.total_opr_docs);
   document.getElementById('cs-value').textContent = fmtVal(totals.total_appraised_value);
 }
 
@@ -1677,9 +1681,10 @@ function renderCountyCards(counties) {
       </div>
       <div class="county-card-body">
         <div class="county-stats-row">
-          <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.total_properties)}</div><div class="county-stat-lbl">Properties</div></div>
+          <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_properties)}</div><div class="county-stat-lbl">Residential</div></div>
           <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_properties)}</div><div class="county-stat-lbl">Commercial</div></div>
-          <div class="county-stat"><div class="county-stat-val county-stat-val-sky">${fmtVal(c.total_appraised_value)}</div><div class="county-stat-lbl">Total Value</div></div>
+          <div class="county-stat"><div class="county-stat-val county-stat-val-sky">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">OPR Res.</div></div>
+          <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">OPR Com.</div></div>
         </div>
         <div class="county-imports">
           <div class="county-import-row">
