@@ -4,15 +4,16 @@
  * POST /api/scrapers/run
  *   Body: { county: string, mode?: "daily" | "monthly" }
  *
- * Starts the scraper for the requested county in the background
- * and returns immediately. The scrape runs via ctx.waitUntil().
+ * Runs the scraper synchronously and waits for it to finish before
+ * responding. This avoids ctx.waitUntil() wall-time limits that cause
+ * Browser Rendering scrapers to be killed silently mid-run.
  */
 
 import type { Env, AuthUser } from "../types";
 import { requireAdmin } from "../auth";
 import { jsonOk, jsonError } from "../router";
 import { scrapeHarris } from "../scrapers/harris";
-import { scrapePublicSearch } from "../scrapers/publicsearch";
+import { scrapePublicSearch, debugScrapePublicSearch } from "../scrapers/publicsearch";
 import { scrapeTravis } from "../scrapers/travis";
 import {
   lastMonthIsoRange, lastMonthSlashRange,
@@ -48,27 +49,55 @@ export async function handleRunScraper(
   const isoRange   = mode === "daily" ? lastYesterdayIsoRange()  : lastMonthIsoRange();
   const slashRange = mode === "daily" ? lastYesterdaySlashRange() : lastMonthSlashRange();
 
-  let task: Promise<void>;
+  let jobId: string | undefined;
 
-  if (county === "harris") {
-    task = scrapeHarris(env, slashRange);
-  } else if (PUBLICSEARCH_COUNTIES.includes(county)) {
-    task = scrapePublicSearch(env, [county], isoRange);
-  } else if (county === "travis") {
-    task = scrapeTravis(env, slashRange);
-  } else {
-    return jsonError(`No scraper configured for county "${county}"`, 400);
+  try {
+    if (county === "harris") {
+      jobId = await scrapeHarris(env, slashRange);
+    } else if (PUBLICSEARCH_COUNTIES.includes(county)) {
+      jobId = await scrapePublicSearch(env, [county], isoRange);
+    } else if (county === "travis") {
+      jobId = await scrapeTravis(env, slashRange);
+    } else {
+      return jsonError(`No scraper configured for county "${county}"`, 400);
+    }
+  } catch (err) {
+    console.error(`[scraper-api] ${county} failed:`, err);
+    return jsonError(`Scraper failed: ${String(err).slice(0, 200)}`, 500);
   }
 
-  ctx.waitUntil(
-    task.catch(err => console.error(`[scraper-api] ${county} failed:`, err))
-  );
-
   return jsonOk({
-    status:  "started",
-    county:  row.name,
+    status:    jobId ? "queued" : "no_new_records",
+    county:    row.name,
     mode,
-    dateRange: mode === "daily" ? isoRange : isoRange,
-    message: `Scraping ${row.name} (${mode}) — check Jobs for results`,
+    jobId:     jobId ?? null,
+    dateRange: isoRange,
+    message:   jobId
+      ? `Scraping ${row.name} (${mode}) — job ${jobId} queued`
+      : `No new records found for ${row.name} (${mode})`,
   });
+}
+
+/** GET /api/scrapers/debug?county=bexar&from=2026-08-01&to=2026-08-31 */
+export async function handleDebugScraper(
+  request: Request,
+  env: Env,
+  _ctx: ExecutionContext,
+  _params: Record<string, string>,
+  user: AuthUser
+): Promise<Response> {
+  const adminError = requireAdmin(user);
+  if (adminError) return adminError;
+
+  const url    = new URL(request.url);
+  const county = (url.searchParams.get("county") ?? "bexar").toLowerCase();
+  const from   = url.searchParams.get("from") ?? lastMonthIsoRange().from;
+  const to     = url.searchParams.get("to")   ?? lastMonthIsoRange().to;
+
+  try {
+    const result = await debugScrapePublicSearch(env, county, { from, to });
+    return jsonOk(result);
+  } catch (e) {
+    return jsonError(`Debug scrape failed: ${String(e)}`, 500);
+  }
 }

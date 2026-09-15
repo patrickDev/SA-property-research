@@ -169,7 +169,7 @@ async function scrapeDocType(
   return rows;
 }
 
-export async function scrapeHarris(env: Env, dateRange?: DateRange): Promise<void> {
+export async function scrapeHarris(env: Env, dateRange?: DateRange): Promise<string | undefined> {
   console.log("[harris] Starting scrape");
   const { from, to } = dateRange ?? lastMonthSlashRange();
   console.log(`[harris] Date range: ${from} → ${to}, types: ${DOC_TYPES.join(", ")}`);
@@ -200,11 +200,11 @@ export async function scrapeHarris(env: Env, dateRange?: DateRange): Promise<voi
   console.log(`[harris] Total rows collected: ${allRows.length}`);
   if (!allRows.length) {
     console.log("[harris] No records — nothing to import");
-    return;
+    return undefined;
   }
 
   const csv = buildOprCsv(allRows);
-  await submitScraperResult(env, {
+  return submitScraperResult(env, {
     county:     COUNTY,
     jobType:    "opr_import",
     csvContent: csv,

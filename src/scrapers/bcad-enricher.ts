@@ -313,7 +313,7 @@ export async function enrichUnmatchedDocuments(env: Env): Promise<void> {
 
   console.log(`[bcad-enricher] Enriching ${docs.length} documents`);
 
-  const browser: Browser = await puppeteer.connect(env.BROWSER);
+  const browser: Browser = await puppeteer.launch(env.BROWSER);
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
