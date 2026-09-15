@@ -53,7 +53,7 @@ export async function runScrapers(
 
   if (activeKeys.has("harris")) {
     tasks.push(
-      scrapeHarris(env, slashRange).catch(err =>
+      scrapeHarris(env, slashRange).then(() => {}).catch(err =>
         console.error("[scrapers] Harris failed:", err)
       )
     );
@@ -61,7 +61,7 @@ export async function runScrapers(
 
   if (psCounties.length > 0) {
     tasks.push(
-      scrapePublicSearch(env, psCounties, isoRange).catch(err =>
+      scrapePublicSearch(env, psCounties, isoRange).then(() => {}).catch(err =>
         console.error("[scrapers] PublicSearch failed:", err)
       )
     );
@@ -69,7 +69,7 @@ export async function runScrapers(
 
   if (activeKeys.has("travis")) {
     tasks.push(
-      scrapeTravis(env, slashRange).catch(err =>
+      scrapeTravis(env, slashRange).then(() => {}).catch(err =>
         console.error("[scrapers] Travis failed:", err)
       )
     );
