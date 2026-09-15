@@ -629,7 +629,7 @@
       <div class="summary-stat" id="cs-counties-stat"><div class="summary-stat-val summary-stat-sky" id="cs-counties">—</div><div class="summary-stat-lbl">Counties Tracked</div></div>
       <div class="summary-stat" id="cs-props-stat"><div class="summary-stat-val" id="cs-props">—</div><div class="summary-stat-lbl">Residential Properties</div></div>
       <div class="summary-stat" id="cs-comm-stat"><div class="summary-stat-val summary-stat-accent" id="cs-comm">—</div><div class="summary-stat-lbl">Commercial Properties</div></div>
-      <div class="summary-stat" id="cs-opr-stat"><div class="summary-stat-val summary-stat-sky" id="cs-opr">—</div><div class="summary-stat-lbl">Foreclosure Filings</div></div>
+      <div class="summary-stat" id="cs-opr-stat"><div class="summary-stat-val summary-stat-sky" id="cs-opr">—</div><div class="summary-stat-lbl">Mortgage Foreclosures</div></div>
       <div class="summary-stat" id="cs-value-stat"><div class="summary-stat-val summary-stat-accent" id="cs-value">—</div><div class="summary-stat-lbl">Total Appraised Value</div></div>
     </div>
 
@@ -1703,22 +1703,22 @@ function renderCountyCards(counties) {
         <div class="county-section county-section-bcad">
           <div class="county-section-hd">
             Properties
-            <span class="county-section-badge county-section-badge-bcad">BCAD · Appraisal</span>
+            <span class="county-section-badge county-section-badge-bcad">Property Records</span>
           </div>
           <div class="county-stats-row">
-            <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_properties)}</div><div class="county-stat-lbl">Residential</div></div>
-            <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.commercial_properties)}</div><div class="county-stat-lbl">Commercial</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_properties)}</div><div class="county-stat-lbl">Residential Properties</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.commercial_properties)}</div><div class="county-stat-lbl">Commercial Properties</div></div>
           </div>
           <div style="padding:6px 14px 8px;font-size:10px;color:rgba(26,58,107,.5)">Last updated: ${fmtDate(c.last_bcad_scrape_at || c.last_bcad_import)}</div>
         </div>
         <div class="county-section county-section-opr">
           <div class="county-section-hd">
-            Foreclosure Filings
+            Mortgage Foreclosure Filings
             <span class="county-section-badge county-section-badge-opr">OPR · County Clerk</span>
           </div>
           <div class="county-stats-row">
-            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">Residential</div></div>
-            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">Commercial</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">Residential Properties</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">Commercial Properties</div></div>
           </div>
           <div style="padding:6px 14px 8px;font-size:10px;color:rgba(230,81,0,.5)">Last pulled: ${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</div>
         </div>
