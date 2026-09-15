@@ -470,27 +470,34 @@
     }
     .county-pill-active { background: var(--accent); color: #fff; }
     .county-pill-empty  { background: rgba(255,255,255,.12); color: rgba(255,255,255,.5); }
-    /* County section header (BCAD / OPR divider) */
-    .county-section-hd {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 14px 4px;
-      font-size: 9px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: .08em; color: var(--gray-500);
+    /* County section blocks — BCAD (blue tint) and OPR (orange tint) */
+    .county-section {
       border-bottom: 1px solid var(--cream-border);
     }
+    .county-section-bcad { background: rgba(26,58,107,.04); }
+    .county-section-opr  { background: rgba(230,81,0,.04); }
+    .county-section-hd {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 14px 5px;
+      font-size: 9px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .county-section-bcad .county-section-hd { color: var(--primary); border-bottom: 1px solid rgba(26,58,107,.1); }
+    .county-section-opr  .county-section-hd { color: var(--accent);  border-bottom: 1px solid rgba(230,81,0,.1); }
     .county-section-badge {
       font-size: 8px; font-weight: 800; letter-spacing: .06em;
-      padding: 1px 6px; border-radius: 4px; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 4px; text-transform: uppercase;
     }
-    .county-section-badge-bcad { background: rgba(26,58,107,.1); color: var(--primary); }
-    .county-section-badge-opr  { background: rgba(230,81,0,.1);  color: var(--accent); }
+    .county-section-badge-bcad { background: rgba(26,58,107,.12); color: var(--primary); }
+    .county-section-badge-opr  { background: rgba(230,81,0,.15);  color: var(--accent); }
     /* County stats row — 2 columns */
     .county-stats-row { display: grid; grid-template-columns: repeat(2,1fr); }
+    .county-section-bcad .county-stat { border-right: 1px solid rgba(26,58,107,.1); }
+    .county-section-opr  .county-stat { border-right: 1px solid rgba(230,81,0,.1); }
     .county-stat {
       padding: 12px 10px; text-align: center;
-      border-right: 1px solid var(--cream-border);
     }
-    .county-stat:nth-child(2n) { border-right: none; }
+    .county-stat:nth-child(2n) { border-right: none !important; }
     .county-stat-val { font-size: 18px; font-weight: 800; line-height: 1; }
     .county-stat-val-navy   { color: var(--primary); }
     .county-stat-val-orange { color: var(--accent); }
@@ -498,10 +505,6 @@
     .county-stat-lbl {
       font-size: 9px; color: var(--gray-400); font-weight: 700;
       text-transform: uppercase; letter-spacing: .04em; margin-top: 3px;
-    }
-    /* Divider between BCAD and OPR sections */
-    .county-section-divider {
-      border: none; border-top: 2px solid var(--cream-border); margin: 0;
     }
     /* Import dates row */
     .county-imports {
@@ -1697,32 +1700,27 @@ function renderCountyCards(counties) {
         <div class="county-card-city">${c.city ? `${c.city}, ` : ''}${c.state}</div>
       </div>
       <div class="county-card-body">
-        <div class="county-section-hd">
-          Properties
-          <span class="county-section-badge county-section-badge-bcad">BCAD</span>
-        </div>
-        <div class="county-stats-row">
-          <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_properties)}</div><div class="county-stat-lbl">Residential</div></div>
-          <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_properties)}</div><div class="county-stat-lbl">Commercial</div></div>
-        </div>
-        <hr class="county-section-divider">
-        <div class="county-section-hd">
-          Foreclosure Filings
-          <span class="county-section-badge county-section-badge-opr">OPR</span>
-        </div>
-        <div class="county-stats-row">
-          <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">Residential</div></div>
-          <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">Commercial</div></div>
-        </div>
-        <div class="county-imports">
-          <div class="county-import-row">
-            <span class="county-import-lbl">Appraisal data (BCAD) last updated</span>
-            <span class="county-import-date">${fmtDate(c.last_bcad_scrape_at || c.last_bcad_import)}</span>
+        <div class="county-section county-section-bcad">
+          <div class="county-section-hd">
+            Properties
+            <span class="county-section-badge county-section-badge-bcad">BCAD · Appraisal</span>
           </div>
-          <div class="county-import-row">
-            <span class="county-import-lbl">Foreclosure filings (OPR) last pulled</span>
-            <span class="county-import-date">${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</span>
+          <div class="county-stats-row">
+            <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_properties)}</div><div class="county-stat-lbl">Residential</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.commercial_properties)}</div><div class="county-stat-lbl">Commercial</div></div>
           </div>
+          <div style="padding:6px 14px 8px;font-size:10px;color:rgba(26,58,107,.5)">Last updated: ${fmtDate(c.last_bcad_scrape_at || c.last_bcad_import)}</div>
+        </div>
+        <div class="county-section county-section-opr">
+          <div class="county-section-hd">
+            Foreclosure Filings
+            <span class="county-section-badge county-section-badge-opr">OPR · County Clerk</span>
+          </div>
+          <div class="county-stats-row">
+            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">Residential</div></div>
+            <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">Commercial</div></div>
+          </div>
+          <div style="padding:6px 14px 8px;font-size:10px;color:rgba(230,81,0,.5)">Last pulled: ${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</div>
         </div>
         <div style="display:flex;gap:8px;padding:14px 16px 16px" onclick="event.stopPropagation()">
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="viewCountyProperties('${c.name}')">View Properties</button>
