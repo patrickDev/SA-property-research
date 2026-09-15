@@ -292,6 +292,7 @@ export interface PropertySearchParams {
   recordedAfter?: string;
   recordedBefore?: string;
   matchConfidence?: MatchConfidence;
+  hasOprMatch?: boolean;
   limit?: number;
   offset?: number;
 }

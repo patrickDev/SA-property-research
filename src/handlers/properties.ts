@@ -70,6 +70,7 @@ function parseSearchParams(url: URL): PropertySearchParams {
     recordedAfter: p.get("recordedAfter") ?? undefined,
     recordedBefore: p.get("recordedBefore") ?? undefined,
     matchConfidence: (p.get("matchConfidence") as PropertySearchParams["matchConfidence"]) ?? undefined,
+    hasOprMatch: p.has("hasOprMatch") ? p.get("hasOprMatch") === "true" : undefined,
     limit: Math.min(num("limit") ?? 50, 200),
     offset: num("offset") ?? 0,
   };
@@ -156,7 +157,7 @@ export async function handleSearchProperties(
   // OPR-based filters require a JOIN
   let oprJoin = "";
   let oprCountJoin = "";
-  if (search.documentType || search.recordedAfter || search.recordedBefore || search.matchConfidence) {
+  if (search.documentType || search.recordedAfter || search.recordedBefore || search.matchConfidence || search.hasOprMatch) {
     oprJoin =
       "LEFT JOIN opr_property_links opl ON opl.property_id = p.id " +
       "LEFT JOIN opr_documents opr ON opr.id = opl.opr_document_id";
@@ -177,6 +178,9 @@ export async function handleSearchProperties(
     if (search.matchConfidence) {
       conditions.push("opl.match_confidence = ?");
       bindings.push(search.matchConfidence);
+    }
+    if (search.hasOprMatch === true) {
+      conditions.push("opl.property_id IS NOT NULL");
     }
   }
 

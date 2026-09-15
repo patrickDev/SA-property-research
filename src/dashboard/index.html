@@ -827,6 +827,13 @@
       <div class="page-sub">Search and explore Texas commercial properties</div>
     </div>
 
+    <div class="filing-pills" style="margin-bottom:8px">
+      <button class="filing-pill filing-pill-all active" id="pill-match-all" onclick="setMatchFilter(false, this)">All Properties</button>
+      <button class="filing-pill" id="pill-match-leads" onclick="setMatchFilter(true, this)" style="color:#16a34a;border-color:#bbf7d0">
+        <span class="filing-pill-dot" style="background:#16a34a"></span>Matched Leads Only
+      </button>
+    </div>
+
     <div class="filing-pills">
       <button class="filing-pill filing-pill-all active" onclick="setFilingFilter('', this)">All Filings</button>
       <button class="filing-pill filing-pill-appt" onclick="setFilingFilter('APP', this)">
@@ -1337,6 +1344,7 @@ async function searchProperties(offset = 0) {
   if (val('f-after'))      params.set('recordedAfter',  val('f-after'));
   if (val('f-before'))     params.set('recordedBefore', val('f-before'));
   if (val('f-confidence')) params.set('matchConfidence', val('f-confidence'));
+  if (window._hasOprMatch)  params.set('hasOprMatch', 'true');
   if (window._countyFilter) params.set('county', window._countyFilter);
   params.set('limit',  propsLimit);
   params.set('offset', offset);
@@ -1372,6 +1380,20 @@ async function searchProperties(offset = 0) {
     body.innerHTML = '<tr><td colspan="9"></td></tr>';
     alertEl.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
   }
+}
+
+function setMatchFilter(matched, btn) {
+  window._hasOprMatch = matched;
+  btn.parentElement.querySelectorAll('.filing-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  if (matched) {
+    btn.style.background = '#16a34a';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'transparent';
+  } else {
+    document.getElementById('pill-match-all').style = '';
+  }
+  searchProperties();
 }
 
 function setFilingFilter(docType, btn) {
@@ -1926,8 +1948,10 @@ function viewCountyProperties(county) {
     Showing: <strong>${county} County</strong>
     <button onclick="clearCountyFilter()" style="margin-left:auto">&#x2715; Clear</button>
   `;
-  // Set hidden county filter and search
+  // Default to matched leads when navigating from county card
   window._countyFilter = county;
+  window._hasOprMatch = true;
+  setMatchFilter(true, document.getElementById('pill-match-leads'));
   searchProperties();
 }
 
