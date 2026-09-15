@@ -470,15 +470,27 @@
     }
     .county-pill-active { background: var(--accent); color: #fff; }
     .county-pill-empty  { background: rgba(255,255,255,.12); color: rgba(255,255,255,.5); }
-    /* County stats row — 2×2 grid */
-    .county-stats-row { display: grid; grid-template-columns: repeat(2,1fr); }
-    .county-stat {
-      padding: 14px 10px; text-align: center;
-      border-right: 1px solid var(--cream-border);
+    /* County section header (BCAD / OPR divider) */
+    .county-section-hd {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px 4px;
+      font-size: 9px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--gray-500);
       border-bottom: 1px solid var(--cream-border);
     }
+    .county-section-badge {
+      font-size: 8px; font-weight: 800; letter-spacing: .06em;
+      padding: 1px 6px; border-radius: 4px; text-transform: uppercase;
+    }
+    .county-section-badge-bcad { background: rgba(26,58,107,.1); color: var(--primary); }
+    .county-section-badge-opr  { background: rgba(230,81,0,.1);  color: var(--accent); }
+    /* County stats row — 2 columns */
+    .county-stats-row { display: grid; grid-template-columns: repeat(2,1fr); }
+    .county-stat {
+      padding: 12px 10px; text-align: center;
+      border-right: 1px solid var(--cream-border);
+    }
     .county-stat:nth-child(2n) { border-right: none; }
-    .county-stat:nth-last-child(-n+2) { border-bottom: none; }
     .county-stat-val { font-size: 18px; font-weight: 800; line-height: 1; }
     .county-stat-val-navy   { color: var(--primary); }
     .county-stat-val-orange { color: var(--accent); }
@@ -487,11 +499,16 @@
       font-size: 9px; color: var(--gray-400); font-weight: 700;
       text-transform: uppercase; letter-spacing: .04em; margin-top: 3px;
     }
+    /* Divider between BCAD and OPR sections */
+    .county-section-divider {
+      border: none; border-top: 2px solid var(--cream-border); margin: 0;
+    }
     /* Import dates row */
     .county-imports {
-      padding: 12px 20px; background: var(--cream);
+      padding: 10px 14px; background: var(--cream);
+      border-top: 1px solid var(--cream-border);
       border-bottom: 1px solid var(--cream-border);
-      display: flex; flex-direction: column; gap: 7px;
+      display: flex; flex-direction: column; gap: 6px;
     }
     .county-import-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
     .county-import-lbl { flex: 1; color: var(--gray-500); font-size: 11px; }
@@ -606,11 +623,11 @@
 
     <!-- Summary bar -->
     <div class="county-summary-bar" id="county-summary-bar">
-      <div class="summary-stat" id="cs-counties-stat"><div class="summary-stat-val summary-stat-sky" id="cs-counties">—</div><div class="summary-stat-lbl">Counties</div></div>
-      <div class="summary-stat" id="cs-props-stat"><div class="summary-stat-val" id="cs-props">—</div><div class="summary-stat-lbl">Residential</div></div>
-      <div class="summary-stat" id="cs-comm-stat"><div class="summary-stat-val summary-stat-accent" id="cs-comm">—</div><div class="summary-stat-lbl">Commercial</div></div>
-      <div class="summary-stat" id="cs-opr-stat"><div class="summary-stat-val summary-stat-sky" id="cs-opr">—</div><div class="summary-stat-lbl">OPR Docs</div></div>
-      <div class="summary-stat" id="cs-value-stat"><div class="summary-stat-val summary-stat-accent" id="cs-value">—</div><div class="summary-stat-lbl">Total Value</div></div>
+      <div class="summary-stat" id="cs-counties-stat"><div class="summary-stat-val summary-stat-sky" id="cs-counties">—</div><div class="summary-stat-lbl">Counties Tracked</div></div>
+      <div class="summary-stat" id="cs-props-stat"><div class="summary-stat-val" id="cs-props">—</div><div class="summary-stat-lbl">Residential Properties</div></div>
+      <div class="summary-stat" id="cs-comm-stat"><div class="summary-stat-val summary-stat-accent" id="cs-comm">—</div><div class="summary-stat-lbl">Commercial Properties</div></div>
+      <div class="summary-stat" id="cs-opr-stat"><div class="summary-stat-val summary-stat-sky" id="cs-opr">—</div><div class="summary-stat-lbl">Foreclosure Filings</div></div>
+      <div class="summary-stat" id="cs-value-stat"><div class="summary-stat-val summary-stat-accent" id="cs-value">—</div><div class="summary-stat-lbl">Total Appraised Value</div></div>
     </div>
 
     <!-- Toolbar -->
@@ -1680,19 +1697,30 @@ function renderCountyCards(counties) {
         <div class="county-card-city">${c.city ? `${c.city}, ` : ''}${c.state}</div>
       </div>
       <div class="county-card-body">
+        <div class="county-section-hd">
+          Properties
+          <span class="county-section-badge county-section-badge-bcad">BCAD</span>
+        </div>
         <div class="county-stats-row">
           <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_properties)}</div><div class="county-stat-lbl">Residential</div></div>
           <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_properties)}</div><div class="county-stat-lbl">Commercial</div></div>
-          <div class="county-stat"><div class="county-stat-val county-stat-val-sky">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">OPR Res.</div></div>
-          <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">OPR Com.</div></div>
+        </div>
+        <hr class="county-section-divider">
+        <div class="county-section-hd">
+          Foreclosure Filings
+          <span class="county-section-badge county-section-badge-opr">OPR</span>
+        </div>
+        <div class="county-stats-row">
+          <div class="county-stat"><div class="county-stat-val county-stat-val-navy">${fmt(c.residential_opr_docs)}</div><div class="county-stat-lbl">Residential</div></div>
+          <div class="county-stat"><div class="county-stat-val county-stat-val-orange">${fmt(c.commercial_opr_docs)}</div><div class="county-stat-lbl">Commercial</div></div>
         </div>
         <div class="county-imports">
           <div class="county-import-row">
-            <span class="county-import-lbl">BCAD last import</span>
+            <span class="county-import-lbl">Appraisal data (BCAD) last updated</span>
             <span class="county-import-date">${fmtDate(c.last_bcad_scrape_at || c.last_bcad_import)}</span>
           </div>
           <div class="county-import-row">
-            <span class="county-import-lbl">OPR last scrape</span>
+            <span class="county-import-lbl">Foreclosure filings (OPR) last pulled</span>
             <span class="county-import-date">${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</span>
           </div>
         </div>
