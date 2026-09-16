@@ -19,6 +19,7 @@ import {
   handleUpdateOwnerPhone,
 } from "./handlers/properties";
 import { handleListCounties, handleAddCounty, handleDeleteCounty } from "./handlers/counties";
+import { handleListLeads } from "./handlers/leads";
 import { handleCreateExport } from "./handlers/exports";
 import { handleRunScraper, handleDebugScraper, handleEnrichScraper } from "./handlers/scrapers";
 import { handleAddNote, handleAddCallStatus } from "./handlers/notes";
@@ -47,6 +48,9 @@ router.post("/api/imports/opr", handleOprImport);
 router.get("/api/jobs", handleListJobs);
 router.get("/api/jobs/:jobId", handleGetJob);
 router.get("/api/jobs/:jobId/download", handleDownloadJob);
+
+// Leads (OPR documents as actionable leads — works without BCAD import)
+router.get("/api/leads", handleListLeads);
 
 // Properties
 router.get("/api/properties", handleSearchProperties);

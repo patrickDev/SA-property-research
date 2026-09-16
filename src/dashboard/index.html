@@ -930,9 +930,9 @@
         <table id="props-table">
           <thead>
             <tr>
-              <th>Property ID</th><th>Address</th><th>City</th><th>Use</th>
-              <th>Bldg Sq Ft</th><th>Bldg Sq M</th><th>Market Value</th>
-              <th>Call Status</th><th>OPR Match</th>
+              <th>Filing Type</th><th>Recorded</th><th>Owner / Grantor</th>
+              <th>Lender / Grantee</th><th>County</th><th>Doc Number</th>
+              <th>Status</th><th>BCAD Value</th>
             </tr>
           </thead>
           <tbody id="props-body">
@@ -1324,62 +1324,96 @@ async function searchProperties(offset = 0) {
   const body    = document.getElementById('props-body');
   const count   = document.getElementById('props-count');
   alertEl.innerHTML = '';
-  body.innerHTML = `<tr><td colspan="9"><div class="empty"><span class="spinner" style="width:22px;height:22px;border-width:3px"></span></div></td></tr>`;
+  body.innerHTML = '<tr><td colspan="8"><div class="empty"><span class="spinner" style="width:22px;height:22px;border-width:3px"></span></div></td></tr>';
 
   const params = new URLSearchParams();
-  const val = id => document.getElementById(id).value;
-  if (val('f-city'))       params.set('city',           val('f-city'));
-  if (val('f-commercial')) params.set('commercial',     val('f-commercial'));
-  if (val('f-use'))        params.set('propertyUse',    val('f-use'));
-  if (val('f-owner'))      params.set('ownerName',      val('f-owner'));
-  if (val('f-min-sqft'))   params.set('minBuildingSqFt', val('f-min-sqft'));
-  if (val('f-max-sqft'))   params.set('maxBuildingSqFt', val('f-max-sqft'));
-  if (val('f-min-sqm'))    params.set('minBuildingSqM',  val('f-min-sqm'));
-  if (val('f-max-sqm'))    params.set('maxBuildingSqM',  val('f-max-sqm'));
-  if (val('f-min-acres'))  params.set('minLandAcres',   val('f-min-acres'));
-  if (val('f-max-acres'))  params.set('maxLandAcres',   val('f-max-acres'));
-  if (val('f-min-val'))    params.set('minMarketValue', val('f-min-val'));
-  if (val('f-max-val'))    params.set('maxMarketValue', val('f-max-val'));
-  if (val('f-doctype'))    params.set('documentType',   val('f-doctype'));
-  if (val('f-after'))      params.set('recordedAfter',  val('f-after'));
-  if (val('f-before'))     params.set('recordedBefore', val('f-before'));
-  if (val('f-confidence')) params.set('matchConfidence', val('f-confidence'));
-  if (window._hasOprMatch)  params.set('hasOprMatch', 'true');
-  if (window._countyFilter) params.set('county', window._countyFilter);
+  const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  if (val('f-doctype')) params.set('documentType', val('f-doctype'));
+  if (val('f-after'))   params.set('from', val('f-after'));
+  if (val('f-before'))  params.set('to',   val('f-before'));
+  if (window._hasOprMatch)  params.set('matched', 'true');
+  if (window._countyFilter) params.set('county',  window._countyFilter);
   params.set('limit',  propsLimit);
   params.set('offset', offset);
   lastFilters = Object.fromEntries(params);
 
+  // Filing type label helper
+  function filingLabel(dt) {
+    const d = (dt || '').toUpperCase();
+    if (d.startsWith('LIS'))         return '<span class="tag" style="background:#fff3e0;color:#e65100">Lis Pendens</span>';
+    if (d.startsWith('APPOINTMENT')) return '<span class="tag" style="background:#e8f5e9;color:#2e7d32">Trustee Appt</span>';
+    if (d.startsWith('NOTICE'))      return '<span class="tag" style="background:#fce4ec;color:#c62828">Notice of Sale</span>';
+    if (d.startsWith('SUBSTITUTION'))return '<span class="tag" style="background:#e3f2fd;color:#1565c0">Sub. of Trustee</span>';
+    return '<span class="tag">' + (dt || 'Unknown') + '</span>';
+  }
+
   try {
-    const resp = await apiFetch(`/api/properties?${params}`);
+    const resp = await apiFetch('/api/leads?' + params);
     const data = await resp.json();
     propsTotal = data.total;
-    count.textContent = `${data.total.toLocaleString()} propert${data.total !== 1 ? 'ies' : 'y'} found`;
+    count.textContent = data.total.toLocaleString() + ' lead' + (data.total !== 1 ? 's' : '') + ' found';
 
-    if (!data.properties.length) {
-      body.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">&#x1F50D;</div><div class="empty-text">No results</div><div class="empty-hint">Try adjusting your filters</div></div></td></tr>`;
+    if (!data.leads || !data.leads.length) {
+      body.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="empty-icon">&#x1F50D;</div><div class="empty-text">No leads found</div><div class="empty-hint">Pull data for a county to see foreclosure filings</div></div></td></tr>';
       renderPagination();
       return;
     }
 
-    body.innerHTML = data.properties.map(p => `
-      <tr onclick="loadDetail('${p.id}')">
-        <td><span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-600)">${p.id}</span></td>
-        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.property_address || '&mdash;'}</td>
-        <td>${p.city || '&mdash;'}</td>
-        <td><span class="tag">${p.property_use_code || '&mdash;'}</span></td>
-        <td>${p.building_area_sq_ft ? p.building_area_sq_ft.toLocaleString() : '&mdash;'}</td>
-        <td>${p.building_area_sq_m  ? p.building_area_sq_m.toLocaleString()  : '&mdash;'}</td>
-        <td>${p.total_appraised_value ? '$' + p.total_appraised_value.toLocaleString() : '&mdash;'}</td>
-        <td>&mdash;</td>
-        <td>&mdash;</td>
-      </tr>
-    `).join('');
+    body.innerHTML = data.leads.map(function(l) {
+      const isMatched = !!l.property_id;
+      const statusBadge = isMatched
+        ? '<span class="tag" style="background:#e8f5e9;color:#2e7d32">&#x2713; Matched</span>'
+        : '<span class="tag" style="background:#fff8e1;color:#f57f17">Unmatched</span>';
+      const bcadVal = l.total_appraised_value ? '$' + Number(l.total_appraised_value).toLocaleString() : '&mdash;';
+      const recorded = l.recording_date ? l.recording_date.slice(0, 10) : '&mdash;';
+      const grantor = l.owner_name || l.grantor || '&mdash;';
+      const grantee = l.grantee || '&mdash;';
+      const docNum  = l.document_number || '&mdash;';
+      const county  = (l.county || '').charAt(0).toUpperCase() + (l.county || '').slice(1);
+      return '<tr onclick="loadLeadDetail(' + JSON.stringify(l) + ')" style="cursor:pointer">'
+        + '<td>' + filingLabel(l.document_type) + '</td>'
+        + '<td style="white-space:nowrap">' + recorded + '</td>'
+        + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + grantor + '">' + grantor + '</td>'
+        + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + grantee + '">' + grantee + '</td>'
+        + '<td>' + county + '</td>'
+        + '<td style="font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-500)">' + docNum + '</td>'
+        + '<td>' + statusBadge + '</td>'
+        + '<td>' + bcadVal + '</td>'
+        + '</tr>';
+    }).join('');
     renderPagination();
   } catch (e) {
-    body.innerHTML = '<tr><td colspan="9"></td></tr>';
-    alertEl.innerHTML = `<div class="alert alert-error">&#x2715; ${e.message}</div>`;
+    body.innerHTML = '<tr><td colspan="8"></td></tr>';
+    alertEl.innerHTML = '<div class="alert alert-error">&#x2715; ' + e.message + '</div>';
   }
+}
+
+function loadLeadDetail(lead) {
+  // If matched to a BCAD property, open the full property detail
+  if (lead.property_id) {
+    loadDetail(lead.property_id);
+    return;
+  }
+  // Otherwise show a quick lead panel
+  const dt = (lead.document_type || '').toUpperCase();
+  let filingColor = '#e65100';
+  if (dt.startsWith('APPOINTMENT')) filingColor = '#2e7d32';
+  if (dt.startsWith('NOTICE'))      filingColor = '#c62828';
+  document.getElementById('detail-panel').innerHTML =
+    '<div style="padding:24px">'
+    + '<h2 style="margin:0 0 4px;font-size:18px">' + (lead.document_type || 'OPR Filing') + '</h2>'
+    + '<div style="color:var(--gray-500);font-size:13px;margin-bottom:20px">Document #' + (lead.document_number || '') + ' &bull; Recorded ' + (lead.recording_date || '') + ' &bull; ' + lead.county + ' County</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">'
+    + '<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px">Owner / Grantor</div><div style="font-weight:600">' + (lead.grantor || '&mdash;') + '</div></div>'
+    + '<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px">Lender / Grantee</div><div>' + (lead.grantee || '&mdash;') + '</div></div>'
+    + '<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px">Property Address</div><div>' + (lead.property_address || lead.bcad_address || 'Not available') + '</div></div>'
+    + '<div><div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px">BCAD Status</div><div style="color:#f57f17;font-weight:600">Unmatched — click Enrich to look up on BCAD</div></div>'
+    + '</div>'
+    + '<div style="margin-top:20px;padding:12px 16px;background:var(--gray-50);border-radius:8px;font-size:13px;color:var(--gray-500)">'
+    + 'This filing is not yet linked to a BCAD property record. Click <strong>Enrich</strong> on the Bexar county card to automatically look up this property on BCAD.'
+    + '</div>'
+    + '</div>';
+  document.getElementById('detail-overlay').classList.add('active');
 }
 
 function setMatchFilter(matched, btn) {
