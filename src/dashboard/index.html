@@ -1892,10 +1892,18 @@ function renderCountyCards(counties) {
           <div style="padding:4px 14px 8px;font-size:10px;color:rgba(230,81,0,.5)">Last pulled: ${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</div>
         </div>
         <div style="display:flex;gap:8px;padding:14px 16px 16px" onclick="event.stopPropagation()">
-          <button class="btn btn-primary btn-sm" style="flex:1" onclick="viewCountyProperties('${c.name}')">View Properties</button>
-          <button class="btn btn-sky btn-sm" onclick="pullCountyData('${c.name}', this)">Pull Data</button>
-          ${c.name.toLowerCase() === 'bexar' ? '<button class="btn btn-success btn-sm" onclick="enrichCounty(this)" title="Match unmatched OPR records to BCAD properties">Enrich</button>' : ''}
-          <button class="btn btn-secondary btn-sm" onclick="importForCounty('${c.name}')">Import</button>
+          <button class="btn btn-primary" style="width:100%;margin-bottom:8px;font-size:13px" onclick="viewCountyProperties('${c.name}')">
+            &#128270; View Leads
+          </button>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sky btn-sm" style="flex:1;font-size:12px" onclick="pullCountyData('${c.name}', this)" title="Scrape the latest foreclosure filings from the county clerk website">
+              &#8659; Pull Filings
+            </button>
+            ${c.name.toLowerCase() === 'bexar' ? '<button class="btn btn-sm" style="flex:1;font-size:12px;background:#059669;color:#fff;border:none" onclick="enrichCounty(this)" title="Look up unmatched filings on BCAD to get owner info and property value">&#9889; Enrich</button>' : ''}
+            <button class="btn btn-secondary btn-sm" style="flex:1;font-size:12px" onclick="importForCounty('${c.name}')" title="Manually upload a BCAD or OPR CSV file">
+              &#8657; Upload CSV
+            </button>
+          </div>
         </div>
       </div>
     </div>
