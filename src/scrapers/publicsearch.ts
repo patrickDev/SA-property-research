@@ -17,10 +17,14 @@ import type { Env } from "../types";
 import { buildOprCsv, lastMonthIsoRange, submitScraperResult } from "./pipeline";
 import type { DateRange } from "./harris";
 
+// Search terms confirmed working on GovOS/Kofile PublicSearch.us platform (Bexar, verified):
+// Use full multi-word doc type names for precision — avoids false positives from name matches.
+// "LIS PENDENS" > "LIS" because "LIS" matches names like "LISA".
+// "APPOINTMENT", "NOTICE", "SUBSTITUTION" are the actual doc type names (not APPT/NTS/SUB).
 const COUNTIES: Record<string, { url: string; name: string; docTypes?: string }> = {
-  bexar:  { url: "https://bexar.tx.publicsearch.us",  name: "Bexar",  docTypes: "APPT,SUB,LIS,NTS" },
-  dallas: { url: "https://dallas.tx.publicsearch.us", name: "Dallas", docTypes: "APPT,SUB,LIS,NTS" },
-  denton: { url: "https://denton.tx.publicsearch.us", name: "Denton", docTypes: "APPT,SUB,LIS,NTS" },
+  bexar:  { url: "https://bexar.tx.publicsearch.us",  name: "Bexar",  docTypes: "LIS PENDENS,APPOINTMENT,NOTICE,SUBSTITUTION" },
+  dallas: { url: "https://dallas.tx.publicsearch.us", name: "Dallas", docTypes: "LIS PENDENS,APPOINTMENT,NOTICE,SUBSTITUTION" },
+  denton: { url: "https://denton.tx.publicsearch.us", name: "Denton", docTypes: "LIS PENDENS,APPOINTMENT,NOTICE,SUBSTITUTION" },
 };
 
 type RowRecord = Record<string, string>;
@@ -34,32 +38,39 @@ async function extractRows(page: Page): Promise<RowRecord[]> {
   ).catch(() => {});
 
   return (page.evaluate(() => {
+    const txt = (el: Element | null) => (el ? (el.textContent || "").trim() : "");
     const rows: Record<string, string>[] = [];
     const trs = document.querySelectorAll("table tbody tr");
     if (trs.length > 0) {
       trs.forEach(tr => {
-        const cells = Array.from(tr.querySelectorAll("td")).map(td => (td.innerText || "").trim());
-        if (cells[0]) rows.push({
-          "Document Number":   cells[0] || "",
-          "Recording Date":    cells[1] || "",
-          "Document Type":     cells[2] || "",
+        const cells = Array.from(tr.querySelectorAll("td")).map(td => txt(td));
+        // Skip rows where no cell has content
+        if (!cells.some(c => c.length > 0)) return;
+        // PublicSearch.us Bexar column order (confirmed from live debug):
+        // 0: empty, 1: empty, 2: empty/checkbox, 3: Grantor (filing party),
+        // 4: Grantee (property owner), 5: Document Type,
+        // 6: Recording Date, 7: Document Number
+        const docNum = cells[7] || cells[6] || "";
+        if (!docNum) return;
+        rows.push({
+          "Document Number":   cells[7] || "",
+          "Recording Date":    cells[6] || "",
+          "Document Type":     cells[5] || "",
           "Grantor":           cells[3] || "",
           "Grantee":           cells[4] || "",
-          "Legal Description": cells[5] || "",
-          "Property Address":  cells[6] || "",
-          "Loan Amount":       cells[7] || "",
+          "Legal Description": "",
+          "Property Address":  "",
+          "Loan Amount":       "",
         });
       });
-      return rows;
+      if (rows.length > 0) return rows;
     }
+    // Card/row fallback
     const cards = document.querySelectorAll(
       "[data-testid='instrument-row'],[class*='resultRow'],[class*='InstrumentRow']"
     );
     cards.forEach(card => {
-      const get = (sel: string) => {
-        const el = card.querySelector<HTMLElement>(sel);
-        return el ? (el.innerText || "").trim() : "";
-      };
+      const get = (sel: string) => txt(card.querySelector(sel));
       rows.push({
         "Document Number":   get("[data-field='instrumentNumber'],[class*='docNumber']"),
         "Recording Date":    get("[data-field='recordedDate'],[class*='recordedDate']"),
@@ -75,17 +86,49 @@ async function extractRows(page: Page): Promise<RowRecord[]> {
   }) as Promise<RowRecord[]>);
 }
 
+// ── Date helpers ───────────────────────────────────────────────────────────────
+
+/** Convert ISO date string (YYYY-MM-DD) to M/D/YYYY for date picker inputs */
+function isoToMDY(iso: string): string {
+  const [year, month, day] = iso.split("-");
+  return `${parseInt(month)}/${parseInt(day)}/${year}`;
+}
+
 // ── Submit the Quick Search form ───────────────────────────────────────────────
 
 /**
- * Submit the home-page Quick Search form with the given search term.
- * This triggers React's internal Redux navigation, so the results page
- * actually fetches data.
+ * Submit the home-page Quick Search form with the given search term and date range.
+ * Setting the date pickers before submitting causes the SPA to include
+ * recordedDateRange in the results URL, limiting server-side results to our range.
  */
-async function submitQuickSearch(page: Page, searchTerm: string): Promise<void> {
+async function submitQuickSearch(page: Page, searchTerm: string, fromDate?: string, toDate?: string): Promise<void> {
+  // Set date range pickers if provided (limits server-side results to our range)
+  if (fromDate || toDate) {
+    await (page.evaluate((from: string, to: string) => {
+      const inputs = Array.from(
+        document.querySelectorAll<HTMLInputElement>(".react-datepicker__input, input[class*='datepicker' i]")
+      );
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
+      const setVal = (el: HTMLInputElement, val: string) => {
+        el.focus();
+        if (nativeSetter) {
+          nativeSetter.call(el, val);
+        } else {
+          el.value = val;
+        }
+        el.dispatchEvent(new Event("input",  { bubbles: true }));
+        el.dispatchEvent(new Event("change", { bubbles: true }));
+        el.dispatchEvent(new Event("blur",   { bubbles: true }));
+      };
+      if (inputs[0] && from) setVal(inputs[0], from);
+      if (inputs[1] && to)   setVal(inputs[1], to);
+    }, fromDate ? isoToMDY(fromDate) : "", toDate ? isoToMDY(toDate) : "") as Promise<void>);
+    await new Promise(r => setTimeout(r, 500));
+  }
+
   // Wait for the Quick Search input to appear (#searchInputBox is the React id)
   await page.waitForSelector(
-    "#searchInputBox, input[id*='searchInput' i], input[placeholder*='Search' i], input[type='search']",
+    "#basicSearchInputBox, #searchInputBox, input[id*='searchInput' i], input[placeholder*='Search' i], input[type='search']",
     { timeout: 15_000 }
   ).catch(() => {});
 
@@ -95,6 +138,7 @@ async function submitQuickSearch(page: Page, searchTerm: string): Promise<void> 
   // Click the search box, clear it, and type the search term
   const typed = await (page.evaluate((term: string) => {
     const sels = [
+      "#basicSearchInputBox",
       "#searchInputBox",
       "input[id*='searchInput' i]",
       "input[placeholder*='Search' i]",
@@ -192,6 +236,32 @@ function filterByDate(rows: RowRecord[], from: string, to: string): RowRecord[] 
   });
 }
 
+// ── Doc type filtering ─────────────────────────────────────────────────────────
+
+// Prefixes of doc type codes that indicate foreclosure/pre-foreclosure activity.
+// Bexar County uses full names like "LIS PENDENS", "NOTICE OF TRUSTEE'S SALE",
+// "APPOINTMENT OF TRUSTEE", "SUBSTITUTION OF TRUSTEE".
+// Confirmed doc type names from Bexar GovOS platform (other counties use same names)
+const TARGET_DOC_TYPE_PREFIXES = [
+  "APPT",           // APPOINTMENT (short code, some counties)
+  "APP",            // APPOINTMENT (alternate short code)
+  "APPOINTMENT",    // APPOINTMENT OF TRUSTEE (full name — Bexar/Dallas/Denton)
+  "SUB",            // SUBSTITUTION (short code, some counties)
+  "SUBSTITUTION",   // SUBSTITUTION OF TRUSTEE (full name — Bexar/Dallas/Denton)
+  "LIS",            // LIS PENDENS
+  "NTS",            // NOTICE OF TRUSTEE'S SALE (short code, some counties)
+  "NOTICE",         // NOTICE (Bexar/Dallas/Denton = Notice of Trustee's Sale)
+];
+
+/** Keep only rows whose Document Type starts with a target foreclosure prefix */
+function filterByDocType(rows: RowRecord[]): RowRecord[] {
+  return rows.filter(row => {
+    const dt = (row["Document Type"] || "").toUpperCase().trim();
+    if (!dt) return false;
+    return TARGET_DOC_TYPE_PREFIXES.some(prefix => dt.startsWith(prefix));
+  });
+}
+
 // ── Per-county scrape ─────────────────────────────────────────────────────────
 
 async function scrapeCounty(
@@ -220,22 +290,23 @@ async function scrapeCounty(
       // Load home page fresh for each search term
       await page.goto(meta.url + "/", { waitUntil: "load", timeout: 30_000 });
 
-      // Submit the quick search form
-      await submitQuickSearch(page, term);
+      // Submit the quick search form with date range to filter server-side
+      await submitQuickSearch(page, term, from, to);
 
       let pageNum = 0;
       while (true) {
-        const rawRows = await extractRows(page);
-        const rows    = filterByDate(rawRows, from, to);
-        console.log(`[${county}] term=${term} page=${pageNum}: ${rawRows.length} raw → ${rows.length} in range`);
+        const rawRows  = await extractRows(page);
+        const dated    = filterByDate(rawRows, from, to);
+        const rows     = filterByDocType(dated);
+        console.log(`[${county}] term=${term} page=${pageNum}: ${rawRows.length} raw → ${dated.length} in range → ${rows.length} matching doc type`);
 
         for (const row of rows) {
           const key = row["Document Number"];
           if (key && !seen.has(key)) { seen.add(key); allRows.push(row); }
         }
 
-        // Stop paginating if this page had no in-range records (we've gone past our date range)
-        if (!rawRows.length) break;
+        // Stop paginating if no raw rows, or none in our date range (gone past it)
+        if (!rawRows.length || !dated.length) break;
         pageNum++;
         const hasNext = await goNext(page);
         if (!hasNext) break;
@@ -288,7 +359,8 @@ export async function scrapePublicSearch(
 export async function debugScrapePublicSearch(
   env: Env,
   county: string,
-  dateRange: DateRange
+  dateRange: DateRange,
+  searchTerm = "APPT"
 ): Promise<Record<string, unknown>> {
   const meta = COUNTIES[county] ?? { url: `https://${county}.tx.publicsearch.us`, name: county };
   const { from, to } = dateRange;
@@ -314,8 +386,8 @@ export async function debugScrapePublicSearch(
       return { title: document.title, url: location.href, inputs, buttons };
     }) as Promise<Record<string, unknown>>);
 
-    // Submit quick search
-    await submitQuickSearch(page, "APPT");
+    // Submit quick search with date range
+    await submitQuickSearch(page, searchTerm, from, to);
 
     const afterInfo = await (page.evaluate(() => ({
       title:   document.title,
@@ -327,7 +399,14 @@ export async function debugScrapePublicSearch(
     const filtered = filterByDate(rows, from, to);
 
     await page.close();
-    return { formInfo, afterInfo, totalRows: rows.length, filteredRows: filtered.length, sampleRows: filtered.slice(0, 10) };
+    return {
+      formInfo,
+      afterInfo,
+      totalRows: rows.length,
+      filteredRows: filtered.length,
+      rawSampleRows: rows.slice(0, 5),
+      sampleRows: filtered.slice(0, 10),
+    };
   } finally {
     await browser.close();
   }

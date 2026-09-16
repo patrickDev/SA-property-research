@@ -63,10 +63,13 @@ export async function handleListCounties(
       COUNT(DISTINCT od.id)                                                             AS total_opr_docs,
       COUNT(DISTINCT CASE WHEN opl.property_id IS NOT NULL THEN od.id END)             AS matched_opr_docs,
       COUNT(DISTINCT CASE WHEN opl.property_id IS NULL     THEN od.id END)             AS unmatched_opr_docs,
-      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) IN ('APPT','APP') THEN od.id END) AS appt_docs,
-      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'SUB'  THEN od.id END)          AS sub_docs,
-      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'LIS'  THEN od.id END)          AS lis_docs,
-      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) = 'NTS'  THEN od.id END)          AS nts_docs
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) LIKE 'APPT%' OR UPPER(od.document_type) LIKE 'APP%'
+                               OR UPPER(od.document_type) LIKE 'APPOINTMENT%'            THEN od.id END) AS appt_docs,
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) LIKE 'SUB%'
+                               OR UPPER(od.document_type) LIKE 'SUBSTITUTION%'           THEN od.id END) AS sub_docs,
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) LIKE 'LIS%'                       THEN od.id END) AS lis_docs,
+      COUNT(DISTINCT CASE WHEN UPPER(od.document_type) LIKE 'NTS%'
+                               OR UPPER(od.document_type) LIKE 'NOTICE%'                 THEN od.id END) AS nts_docs
     FROM opr_documents od
     LEFT JOIN opr_property_links opl ON od.id = opl.opr_document_id
     GROUP BY UPPER(od.county)

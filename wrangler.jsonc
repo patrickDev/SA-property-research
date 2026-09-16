@@ -84,5 +84,9 @@
     // Cloudflare Access configuration — set these as wrangler secrets:
     //   wrangler secret put CF_ACCESS_AUDIENCE
     //   wrangler secret put CF_ACCESS_TEAM_DOMAIN
+  },
+  "observability": {
+    "enabled": false
   }
+  
 }

@@ -93,9 +93,10 @@ export async function handleDebugScraper(
   const county = (url.searchParams.get("county") ?? "bexar").toLowerCase();
   const from   = url.searchParams.get("from") ?? lastMonthIsoRange().from;
   const to     = url.searchParams.get("to")   ?? lastMonthIsoRange().to;
+  const term   = url.searchParams.get("term") ?? "APPT";
 
   try {
-    const result = await debugScrapePublicSearch(env, county, { from, to });
+    const result = await debugScrapePublicSearch(env, county, { from, to }, term);
     return jsonOk(result);
   } catch (e) {
     return jsonError(`Debug scrape failed: ${String(e)}`, 500);
