@@ -118,6 +118,7 @@ async function submitQuickSearch(page: Page, searchTerm: string): Promise<void> 
           el.dispatchEvent(new Event("input", { bubbles: true }));
         }
         el.dispatchEvent(new Event("change", { bubbles: true }));
+        el.dispatchEvent(new Event("blur",   { bubbles: true }));
         return sel;
       }
     }
