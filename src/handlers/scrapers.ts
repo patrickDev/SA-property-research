@@ -15,6 +15,7 @@ import { jsonOk, jsonError } from "../router";
 import { scrapeHarris } from "../scrapers/harris";
 import { scrapePublicSearch, debugScrapePublicSearch } from "../scrapers/publicsearch";
 import { scrapeTravis } from "../scrapers/travis";
+import { enrichUnmatchedDocuments } from "../scrapers/bcad-enricher";
 import {
   lastMonthIsoRange, lastMonthSlashRange,
   lastYesterdayIsoRange, lastYesterdaySlashRange,
@@ -66,16 +67,51 @@ export async function handleRunScraper(
     return jsonError(`Scraper failed: ${String(err).slice(0, 200)}`, 500);
   }
 
+  // After Bexar OPR scrape, automatically enrich unmatched docs with BCAD data
+  let enrichResult: { enriched: number; failed: number; skipped: number } | null = null;
+  if (jobId && county === "bexar") {
+    console.log("[scraper-api] Bexar OPR done — running BCAD enrichment");
+    enrichResult = await enrichUnmatchedDocuments(env).catch((err: unknown) => {
+      console.error("[scraper-api] enrichment failed:", err);
+      return null;
+    });
+  }
+
   return jsonOk({
-    status:    jobId ? "queued" : "no_new_records",
-    county:    row.name,
+    status:       jobId ? "queued" : "no_new_records",
+    county:       row.name,
     mode,
-    jobId:     jobId ?? null,
-    dateRange: isoRange,
-    message:   jobId
-      ? `Scraping ${row.name} (${mode}) — job ${jobId} queued`
+    jobId:        jobId ?? null,
+    dateRange:    isoRange,
+    enrichment:   enrichResult,
+    message:      jobId
+      ? `Scraped ${row.name} (${mode}) — job ${jobId} queued${enrichResult ? `, enriched ${enrichResult.enriched} record(s)` : ""}`
       : `No new records found for ${row.name} (${mode})`,
   });
+}
+
+/** POST /api/scrapers/enrich — run BCAD enrichment on unmatched Bexar OPR docs */
+export async function handleEnrichScraper(
+  _request: Request,
+  env: Env,
+  _ctx: ExecutionContext,
+  _params: Record<string, string>,
+  user: AuthUser
+): Promise<Response> {
+  const adminError = requireAdmin(user);
+  if (adminError) return adminError;
+
+  try {
+    const result = await enrichUnmatchedDocuments(env);
+    return jsonOk({
+      status: "completed",
+      ...result,
+      message: `Enriched ${result.enriched} document(s) with BCAD property data`,
+    });
+  } catch (err) {
+    console.error("[enrich-api] failed:", err);
+    return jsonError(`Enrichment failed: ${String(err).slice(0, 200)}`, 500);
+  }
 }
 
 /** GET /api/scrapers/debug?county=bexar&from=2026-08-01&to=2026-08-31 */

@@ -1860,6 +1860,7 @@ function renderCountyCards(counties) {
         <div style="display:flex;gap:8px;padding:14px 16px 16px" onclick="event.stopPropagation()">
           <button class="btn btn-primary btn-sm" style="flex:1" onclick="viewCountyProperties('${c.name}')">View Properties</button>
           <button class="btn btn-sky btn-sm" onclick="pullCountyData('${c.name}', this)">Pull Data</button>
+          ${c.name.toLowerCase() === 'bexar' ? '<button class="btn btn-success btn-sm" onclick="enrichCounty(this)" title="Match unmatched OPR records to BCAD properties">Enrich</button>' : ''}
           <button class="btn btn-secondary btn-sm" onclick="importForCounty('${c.name}')">Import</button>
         </div>
       </div>
@@ -2003,13 +2004,13 @@ async function pullCountyData(county, btn) {
     const resp = await apiFetch('/api/scrapers/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ county, mode: 'daily' }),
+      body: JSON.stringify({ county, mode: 'monthly' }),
     });
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || 'Failed');
-    btn.textContent = 'Running…';
+    const enriched = data.enrichment ? data.enrichment.enriched : 0;
+    btn.textContent = enriched > 0 ? 'Done (+' + enriched + ' matched)' : 'Done';
     btn.style.background = 'var(--success)';
-    // Navigate to Jobs immediately and start live polling
     showSectionDirect('jobs');
     startJobsPolling();
     setTimeout(() => {
@@ -2017,6 +2018,33 @@ async function pullCountyData(county, btn) {
       btn.textContent = origText;
       btn.style.background = '';
     }, 6000);
+  } catch (e) {
+    btn.textContent = 'Error';
+    btn.style.background = 'var(--danger)';
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = origText;
+      btn.style.background = '';
+    }, 3000);
+  }
+}
+
+async function enrichCounty(btn) {
+  const origText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Enriching…';
+  try {
+    const resp = await apiFetch('/api/scrapers/enrich', { method: 'POST' });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Failed');
+    btn.textContent = data.enriched > 0 ? '+' + data.enriched + ' matched' : 'No new matches';
+    btn.style.background = data.enriched > 0 ? 'var(--success)' : 'var(--gray-400)';
+    loadCounties();
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.textContent = origText;
+      btn.style.background = '';
+    }, 5000);
   } catch (e) {
     btn.textContent = 'Error';
     btn.style.background = 'var(--danger)';
