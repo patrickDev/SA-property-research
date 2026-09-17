@@ -925,14 +925,15 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div id="props-count" style="font-size:13px;font-weight:500;color:var(--gray-500)">—</div>
+        <button class="btn btn-secondary btn-sm" onclick="exportLeadsCSV()" title="Export all filtered leads as CSV">&#8595; Export CSV</button>
       </div>
       <div class="table-wrap">
         <table id="props-table">
           <thead>
             <tr>
               <th>Filing Type</th><th>Recorded</th><th>Owner / Grantor</th>
-              <th>Lender / Grantee</th><th>County</th><th>Doc Number</th>
-              <th>Status</th><th>BCAD Value</th>
+              <th>Property Address</th><th>Mailing Address</th>
+              <th>Phone</th><th>Status</th><th>BCAD Value</th>
             </tr>
           </thead>
           <tbody id="props-body">
@@ -1366,17 +1367,19 @@ async function searchProperties(offset = 0) {
         : '<span class="tag" style="background:#fff8e1;color:#f57f17">Unmatched</span>';
       const bcadVal = l.total_appraised_value ? '$' + Number(l.total_appraised_value).toLocaleString() : '&mdash;';
       const recorded = l.recording_date ? l.recording_date.slice(0, 10) : '&mdash;';
-      const grantor = l.owner_name || l.grantor || '&mdash;';
-      const grantee = l.grantee || '&mdash;';
-      const docNum  = l.document_number || '&mdash;';
-      const county  = (l.county || '').charAt(0).toUpperCase() + (l.county || '').slice(1);
+      const grantor  = l.owner_name || l.grantor || '&mdash;';
+      const propAddr = l.property_address || l.bcad_address || '&mdash;';
+      const mailAddr = l.mailing_address
+        ? (l.mailing_address + (l.mailing_city ? ', ' + l.mailing_city : '') + (l.mailing_state ? ' ' + l.mailing_state : '') + (l.mailing_zip ? ' ' + l.mailing_zip : ''))
+        : '&mdash;';
+      const phone    = l.phone || '&mdash;';
       return '<tr onclick="loadLeadDetail(' + JSON.stringify(l) + ')" style="cursor:pointer">'
         + '<td>' + filingLabel(l.document_type) + '</td>'
         + '<td style="white-space:nowrap">' + recorded + '</td>'
-        + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + grantor + '">' + grantor + '</td>'
-        + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + grantee + '">' + grantee + '</td>'
-        + '<td>' + county + '</td>'
-        + '<td style="font-family:ui-monospace,monospace;font-size:11px;color:var(--gray-500)">' + docNum + '</td>'
+        + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + grantor + '">' + grantor + '</td>'
+        + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + propAddr + '">' + propAddr + '</td>'
+        + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + mailAddr + '">' + mailAddr + '</td>'
+        + '<td style="white-space:nowrap">' + phone + '</td>'
         + '<td>' + statusBadge + '</td>'
         + '<td>' + bcadVal + '</td>'
         + '</tr>';
@@ -1740,6 +1743,60 @@ async function submitStatus() {
   }
 }
 
+// ── Leads CSV Export ─────────────────────────────────────────────────────────
+async function exportLeadsCSV() {
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = 'Exporting…';
+  try {
+    const params = new URLSearchParams();
+    const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+    if (val('f-doctype')) params.set('documentType', val('f-doctype'));
+    if (val('f-after'))   params.set('from', val('f-after'));
+    if (val('f-before'))  params.set('to',   val('f-before'));
+    if (window._hasOprMatch)  params.set('matched', 'true');
+    if (window._countyFilter) params.set('county',  window._countyFilter);
+    params.set('limit', '2000');
+    params.set('offset', '0');
+
+    const resp = await apiFetch('/api/leads?' + params);
+    const data = await resp.json();
+    const leads = data.leads || [];
+    if (!leads.length) { alert('No leads to export.'); return; }
+
+    const esc = v => v == null ? '' : ('"' + String(v).replace(/"/g, '""') + '"');
+    const headers = [
+      'Filing Type','Recording Date','Document Number','County',
+      'Owner / Grantor','Lender / Grantee','Loan Amount',
+      'Property Address',
+      'Owner Name (BCAD)','Mailing Street','Mailing City','Mailing State','Mailing Zip','Phone',
+      'BCAD Property ID','Appraised Value','Match Status'
+    ];
+    const rows = leads.map(l => [
+      l.document_type, l.recording_date, l.document_number, l.county,
+      l.grantor, l.grantee, l.loan_amount,
+      l.property_address || l.bcad_address,
+      l.owner_name, l.mailing_address, l.mailing_city, l.mailing_state, l.mailing_zip, l.phone,
+      l.property_id, l.total_appraised_value,
+      l.property_id ? 'Matched' : 'Unmatched'
+    ].map(esc).join(','));
+
+    const csv = [headers.map(esc).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'foreclosure-leads-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Export failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#8595; Export CSV';
+  }
+}
+
 // ── Export ────────────────────────────────────────────────────────────────────
 async function startExport() {
   const statusEl = document.getElementById('export-status');
@@ -1891,16 +1948,16 @@ function renderCountyCards(counties) {
           </div>
           <div style="padding:4px 14px 8px;font-size:10px;color:rgba(230,81,0,.5)">Last pulled: ${fmtDate(c.last_opr_scrape_at || c.last_opr_import)}</div>
         </div>
-        <div style="display:flex;gap:8px;padding:14px 16px 16px" onclick="event.stopPropagation()">
-          <button class="btn btn-primary" style="width:100%;margin-bottom:8px;font-size:13px" onclick="viewCountyProperties('${c.name}')">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:12px 14px 14px" onclick="event.stopPropagation()">
+          <button class="btn btn-primary" style="width:100%;font-size:13px" onclick="viewCountyProperties('${c.name}')">
             &#128270; View Leads
           </button>
-          <div style="display:flex;gap:6px">
-            <button class="btn btn-sky btn-sm" style="flex:1;font-size:12px" onclick="pullCountyData('${c.name}', this)" title="Scrape the latest foreclosure filings from the county clerk website">
+          <div style="display:flex;gap:6px;flex-wrap:nowrap">
+            <button class="btn btn-sky btn-sm" style="flex:1;font-size:11px;padding:6px 4px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="pullCountyData('${c.name}', this)" title="Scrape the latest foreclosure filings from the county clerk website">
               &#8659; Pull Filings
             </button>
-            ${c.name.toLowerCase() === 'bexar' ? '<button class="btn btn-sm" style="flex:1;font-size:12px;background:#059669;color:#fff;border:none" onclick="enrichCounty(this)" title="Look up unmatched filings on BCAD to get owner info and property value">&#9889; Enrich</button>' : ''}
-            <button class="btn btn-secondary btn-sm" style="flex:1;font-size:12px" onclick="importForCounty('${c.name}')" title="Manually upload a BCAD or OPR CSV file">
+            ${c.name.toLowerCase() === 'bexar' ? '<button class="btn btn-sm" style="flex:1;font-size:11px;padding:6px 4px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#059669;color:#fff;border:none" onclick="enrichCounty(this)" title="Look up unmatched filings on BCAD to get owner info and property value">&#9889; Enrich</button>' : ''}
+            <button class="btn btn-secondary btn-sm" style="flex:1;font-size:11px;padding:6px 4px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="importForCounty('${c.name}')" title="Manually upload a BCAD or OPR CSV file">
               &#8657; Upload CSV
             </button>
           </div>

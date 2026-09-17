@@ -90,6 +90,115 @@ export async function handleRunScraper(
   });
 }
 
+/** GET /api/scrapers/enrich-debug — inspect TrueAutomation search page HTML */
+export async function handleEnrichDebug(
+  request: Request,
+  _env: Env,
+  _ctx: ExecutionContext,
+  _params: Record<string, string>,
+  user: AuthUser
+): Promise<Response> {
+  const adminError = requireAdmin(user);
+  if (adminError) return adminError;
+
+  const url  = new URL(request.url);
+  const name = url.searchParams.get("name") ?? "WARLOCK KATRINA";
+
+  const BASE = "https://propaccess.trueautomation.com/clientdb";
+  const CID  = "110";
+
+  try {
+    // Step 1: GET search page directly (not root redirect)
+    const getResp = await fetch(`${BASE}/propertysearch.aspx?cid=${CID}`, {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
+    });
+    const getHtml = await getResp.text();
+    // Parse Set-Cookie headers into Cookie request header (name=value pairs only)
+    const rawCookies: string[] = (getResp.headers as any).getSetCookie?.() ?? [];
+    const cookies = rawCookies.length
+      ? rawCookies.map((h: string) => h.split(";")[0]!.trim()).join("; ")
+      : (getResp.headers.get("set-cookie") ?? "").split(",").map((h: string) => h.split(";")[0]!.trim()).join("; ");
+
+    // Extract hidden fields for display (truncated)
+    const hiddenFields: Record<string, string> = {};
+    for (const m of getHtml.matchAll(/name="(__[^"]+)"\s+[^>]*value="([^"]*)"/gi)) {
+      hiddenFields[m[1]!] = m[2]!.slice(0, 40);
+    }
+
+    // Extract all input names to find the owner name field
+    const inputNames = [...getHtml.matchAll(/name="([^"]*Owner[^"]*)"/gi)].map(m => m[1]);
+    const btnNames   = [...getHtml.matchAll(/name="([^"]*btn[^"]*)"/gi)].map(m => m[1]);
+    const allInputs  = [...getHtml.matchAll(/name="([^"]+)"/gi)].map(m => m[1]).slice(0, 40);
+
+    // Step 2: POST with owner name — use FULL hidden field values (not truncated)
+    const extractFull = (fieldName: string): string => {
+      const m = getHtml.match(new RegExp(`name="${fieldName}"[^>]*value="([^"]*)"`, "i"))
+             ?? getHtml.match(new RegExp(`value="([^"]*)"[^>]*name="${fieldName}"`, "i"));
+      return m ? m[1]! : "";
+    };
+    const viewState = extractFull("__VIEWSTATE");
+    const eventVal  = extractFull("__EVENTVALIDATION");
+    const ownerField = inputNames[0] ?? "ctl00$cphBody$txtOwnerName";
+    const btnField   = btnNames.find(b => /search/i.test(b ?? "")) ?? "ctl00$cphBody$btnSearch";
+
+    const body = new URLSearchParams({
+      "__EVENTTARGET":                      "",
+      "__EVENTARGUMENT":                    "",
+      "__VIEWSTATE":                        viewState,
+      "__EVENTVALIDATION":                  eventVal,
+      "propertySearchOptions:searchText":   name,
+      "propertySearchOptions:search":       "Search",
+      "propertySearchOptions:taxyear":      String(new Date().getFullYear()),
+      "propertySearchOptions:propertyType": "R",
+    });
+
+    const postResp = await fetch(`${BASE}/propertysearch.aspx?cid=${CID}`, {
+      method: "POST",
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cookie": cookies,
+        "Referer": `${BASE}/propertysearch.aspx?cid=${CID}`,
+      },
+      body: body.toString(),
+    });
+    const postHtml = await postResp.text();
+
+    // Extract prop_id links
+    const propLinks = [...postHtml.matchAll(/prop_id=(\d+)/gi)].map(m => m[1]);
+
+    // Fetch first property detail page to inspect HTML structure
+    let detailHtml = "";
+    const firstPropId = propLinks[0];
+    if (firstPropId) {
+      const year = new Date().getFullYear();
+      const detailResp = await fetch(
+        `${BASE}/Property.aspx?prop_id=${firstPropId}&cid=${CID}&year=${year}`,
+        { headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" } }
+      );
+      detailHtml = await detailResp.text();
+    }
+
+    return jsonOk({
+      searchName: name,
+      getStatus:  getResp.status,
+      postStatus: postResp.status,
+      hiddenFields,
+      ownerInputsFound: inputNames,
+      btnInputsFound:   btnNames,
+      allInputNames:    allInputs,
+      propIdsFound: propLinks,
+      cookies,
+      viewStateLengths: { viewState: viewState.length, eventVal: eventVal.length },
+      postHtmlSnippet: postHtml.slice(0, 1000),
+      detailHtmlLen: detailHtml.length,
+      detailTop: detailHtml.slice(9000, 14000),
+    });
+  } catch (e) {
+    return jsonError(`Debug failed: ${String(e)}`, 500);
+  }
+}
+
 /** POST /api/scrapers/enrich — run BCAD enrichment on unmatched Bexar OPR docs */
 export async function handleEnrichScraper(
   _request: Request,
